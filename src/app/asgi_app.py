@@ -296,19 +296,40 @@ async def asgi_fetch(app: App, workers_request, env):
     将 Cloudflare Workers Request 转为 ASGI 调用
     """
     from workers import Response
-    from urllib.parse import urlsplit
 
-    # Workers 中 request.url 是字符串 (完整URL)
+    # Workers 中 request.url 包含完整 URL，需要提取路径
     url_str = str(workers_request.url)
-    parsed = urlsplit(url_str)
-    path = parsed.path
-    query_str = parsed.query
+
+    # 提取路径和查询字符串（兼容 Pyodide，不使用 urllib）
+    idx_q = url_str.find("?")
+    idx_h = url_str.find("#")
+    if idx_q >= 0:
+        path = url_str[:idx_q]
+        query_str = url_str[idx_q+1:] if idx_h < 0 else url_str[idx_q+1:idx_h]
+    elif idx_h >= 0:
+        path = url_str[:idx_h]
+        query_str = ""
+    else:
+        path = url_str
+        query_str = ""
+
+    # 从完整 URL 中提取路径部分
+    # URL 格式: https://domain/path?query
+    # 查找第三个 / 之后的路径
+    slash_count = 0
+    path_only = ""
+    for i, c in enumerate(path):
+        if c == '/':
+            slash_count += 1
+            if slash_count == 3:
+                path_only = path[i:]
+                break
 
     # 构建 ASGI scope
     scope = {
         "type": "http",
         "method": workers_request.method,
-        "path": path,
+        "path": path_only if path_only else path,
         "query_string": query_str.encode(),
         "headers": [(k.lower().encode(), v.encode()) for k, v in workers_request.headers.items()],
         "env": env,
