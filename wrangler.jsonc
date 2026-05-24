@@ -1,0 +1,26 @@
+{
+  "name": "huiwu",
+  "main": "src/worker.py",
+  "compatibility_date": "2025-11-02",
+  "compatibility_flags": ["python_workers"],
+  "account_id": "279f4c621290c0aad8d327291fc9e32c",
+  
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "jdyspa-db",
+      "database_id": "42469b4f-6657-4eca-b689-5c75888d5d57",
+      "migrations_dir": "migrations"
+    }
+  ],
+  
+  "vars": {
+    "JWT_SECRET_KEY": "change-this-in-production",
+    "ENCRYPTION_KEY": ""
+  },
+  
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+}

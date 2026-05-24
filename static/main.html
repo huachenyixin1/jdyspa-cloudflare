@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>会议接待助手</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #7eb8da;
+            --primary-dark: #5ca0c8;
+            --sidebar-width: 220px;
+            --sidebar-collapsed: 60px;
+            --header-height: 56px;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* 顶部导航 */
+        .top-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            background: #e3f2fd;
+            color: #333;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .menu-toggle {
+            width: 36px;
+            height: 36px;
+            background: rgba(0,0,0,0.08);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .menu-toggle:hover {
+            background: rgba(0,0,0,0.12);
+        }
+        
+        .menu-toggle svg {
+            width: 20px;
+            height: 20px;
+            fill: #333;
+        }
+        
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .conference-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 6px 16px;
+            background: rgba(0,0,0,0.06);
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .conference-info:hover {
+            background: rgba(0,0,0,0.1);
+        }
+        
+        .conference-info.hidden {
+            display: none;
+        }
+        
+        .conference-name {
+            font-weight: 500;
+        }
+        
+        .conference-code {
+            opacity: 0.8;
+            font-size: 12px;
+        }
+        
+        .switch-btn {
+            padding: 4px 10px;
+            background: rgba(0,0,0,0.08);
+            border: none;
+            border-radius: 4px;
+            color: #333;
+            font-size: 12px;
+            cursor: pointer;
+            margin-left: 8px;
+        }
+        
+        .switch-btn:hover {
+            background: rgba(0,0,0,0.12);
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .user-name {
+            font-size: 14px;
+        }
+        
+        .logout-btn {
+            padding: 6px 16px;
+            background: rgba(0,0,0,0.08);
+            border: none;
+            border-radius: 6px;
+            color: #333;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .logout-btn:hover {
+            background: rgba(0,0,0,0.12);
+        }
+        
+        /* 左侧菜单 */
+        .sidebar {
+            position: fixed;
+            top: var(--header-height);
+            left: 0;
+            bottom: 0;
+            width: var(--sidebar-collapsed);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            transition: width 0.3s ease;
+            z-index: 90;
+            overflow: hidden;
+            border-right: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.05);
+        }
+        
+        .sidebar.expanded {
+            width: var(--sidebar-width);
+        }
+        
+        .sidebar-menu {
+            padding: 12px 0;
+        }
+        
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 14px 18px;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            gap: 14px;
+        }
+        
+        .menu-item:hover {
+            background: rgba(0,0,0,0.05);
+            color: #333;
+        }
+        
+        .menu-item.active {
+            background: rgba(144, 202, 249, 0.3);
+            color: #333;
+            border-left: 3px solid #5c9ce6;
+        }
+        
+        .menu-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        
+        .menu-text {
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .sidebar.expanded .menu-text {
+            opacity: 1;
+        }
+        
+        /* 主内容区 */
+        .main-content {
+            position: fixed;
+            top: var(--header-height);
+            left: var(--sidebar-collapsed);
+            right: 0;
+            bottom: 0;
+            background: #f5f5f5;
+            transition: left 0.3s ease;
+        }
+        
+        .sidebar.expanded ~ .main-content {
+            left: var(--sidebar-width);
+        }
+        
+        .content-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #fff;
+        }
+        
+        /* 会议选择弹窗 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow: hidden;
+        }
+        
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .modal-body {
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .conference-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .conference-item {
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+        
+        .conference-item:hover {
+            background: #e9ecef;
+        }
+        
+        .conference-item.selected {
+            border-color: var(--primary);
+            background: #f0f4ff;
+        }
+        
+        .conference-item-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        
+        .conference-item-info {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .empty-tip {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+        }
+        
+        .create-conf-btn {
+            margin-top: 16px;
+            padding: 10px 24px;
+            background: #4A90D9;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .create-conf-btn:hover {
+            background: #3a7bc8;
+        }
+        
+        .user-menu {
+            position: fixed;
+            top: 56px;
+            right: 100px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: none;
+            z-index: 200;
+            min-width: 120px;
+        }
+        
+        .user-menu.show {
+            display: block;
+        }
+        
+        .user-menu-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .user-menu-item:hover {
+            background: #f5f5f5;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #5c9ce6;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding: 16px 20px;
+            border-top: 1px solid #f0f0f0;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .btn-primary {
+            background: #5c9ce6;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <div class="top-header">
+        <div class="header-left">
+            <button class="menu-toggle" onclick="toggleSidebar()">
+                <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+            </button>
+            <span class="header-title">会议接待助手</span>
+            <div class="conference-info hidden" id="conferenceInfo" onclick="openConferenceModal()">
+                <span class="conference-name" id="conferenceName"></span>
+                <span class="conference-code" id="conferenceCode"></span>
+                <button class="switch-btn" onclick="event.stopPropagation(); openConferenceModal()">切换</button>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="user-info" onclick="toggleUserMenu()">
+                <div class="user-avatar" id="userAvatar">U</div>
+                <span class="user-name" id="userName">用户</span>
+            </div>
+            <button class="logout-btn" onclick="logout()">退出登录</button>
+        </div>
+    </div>
+    
+    <!-- 左侧菜单 -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-menu">
+            <div class="menu-item active" data-page="dashboard" onclick="switchPage('dashboard')">
+                <span class="menu-icon">📊</span>
+                <span class="menu-text">数据看板</span>
+            </div>
+            <div class="menu-item" data-page="conference" onclick="switchPage('conference')">
+                <span class="menu-icon">📋</span>
+                <span class="menu-text">会议管理</span>
+            </div>
+            <div class="menu-item" data-page="seating" onclick="switchPage('seating')">
+                <span class="menu-icon">🪑</span>
+                <span class="menu-text">会场</span>
+            </div>
+            <div class="menu-item" data-page="transport" onclick="switchPage('transport')">
+                <span class="menu-icon">🚗</span>
+                <span class="menu-text">车辆排班</span>
+            </div>
+            <div class="menu-item" data-page="profile" onclick="switchPage('profile')">
+                <span class="menu-icon">👤</span>
+                <span class="menu-text">我的信息</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 主内容区 -->
+    <div class="main-content">
+        <iframe class="content-frame" id="contentFrame" src=""></iframe>
+    </div>
+    
+    <!-- 会议选择弹窗 -->
+    <div class="modal-overlay" id="conferenceModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>选择会议</h3>
+                <button class="modal-close" onclick="closeConferenceModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="conference-list" id="conferenceList"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 用户菜单 -->
+    <div class="user-menu" id="userMenu">
+        <div class="user-menu-item" onclick="openPasswordModal()">修改密码</div>
+    </div>
+    
+    <!-- 修改密码弹窗 -->
+    <div class="modal-overlay" id="passwordModal">
+        <div class="modal-content" style="max-width: 360px;">
+            <div class="modal-header">
+                <h3>修改密码</h3>
+                <button class="modal-close" onclick="closePasswordModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>当前密码</label>
+                    <input type="password" id="oldPassword" placeholder="请输入当前密码">
+                </div>
+                <div class="form-group">
+                    <label>新密码</label>
+                    <input type="password" id="newPassword" placeholder="请输入新密码">
+                </div>
+                <div class="form-group">
+                    <label>确认新密码</label>
+                    <input type="password" id="confirmPassword" placeholder="请再次输入新密码">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closePasswordModal()">取消</button>
+                <button class="btn btn-primary" onclick="submitPassword()">确认修改</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let token = localStorage.getItem('token');
+        let currentConference = null;
+        let currentPage = 'conference';
+        
+        function getHeaders() {
+            return {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            };
+        }
+        
+        function checkAuth() {
+            if (!token) {
+                window.location.href = '/login.html';
+                return false;
+            }
+            return true;
+        }
+        
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('token_type');
+            localStorage.removeItem('currentConference');
+            window.location.href = '/login.html';
+        }
+        
+        function toggleUserMenu() {
+            const menu = document.getElementById('userMenu');
+            menu.classList.toggle('show');
+        }
+        
+        document.addEventListener('click', function(e) {
+            const menu = document.getElementById('userMenu');
+            const userInfo = document.querySelector('.user-info');
+            if (!userInfo.contains(e.target) && !menu.contains(e.target)) {
+                menu.classList.remove('show');
+            }
+        });
+        
+        function openPasswordModal() {
+            document.getElementById('userMenu').classList.remove('show');
+            document.getElementById('passwordModal').classList.add('active');
+            document.getElementById('oldPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+        }
+        
+        function closePasswordModal() {
+            document.getElementById('passwordModal').classList.remove('active');
+        }
+        
+        async function submitPassword() {
+            const oldPassword = document.getElementById('oldPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (!oldPassword || !newPassword || !confirmPassword) {
+                alert('请填写所有字段');
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                alert('两次输入的新密码不一致');
+                return;
+            }
+            
+            if (newPassword.length < 6) {
+                alert('新密码长度不能少于6位');
+                return;
+            }
+            
+            try {
+                const res = await fetch('/api/auth/change-password', {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({
+                        old_password: oldPassword,
+                        new_password: newPassword
+                    })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    alert('密码修改成功，请重新登录');
+                    logout();
+                } else {
+                    alert(data.detail || '修改失败');
+                }
+            } catch (e) {
+                alert('修改失败，请稍后重试');
+            }
+        }
+        
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('expanded');
+        }
+        
+        async function loadUserInfo() {
+            try {
+                const resp = await fetch('/api/auth/me', { headers: getHeaders() });
+                if (resp.ok) {
+                    const user = await resp.json();
+                    document.getElementById('userName').textContent = user.username;
+                    document.getElementById('userAvatar').textContent = user.username[0].toUpperCase();
+                }
+            } catch (e) {
+                console.error('加载用户信息失败', e);
+            }
+        }
+        
+        async function loadConferences() {
+            try {
+                const resp = await fetch('/api/conferences/', { headers: getHeaders() });
+                if (resp.status === 401) {
+                    logout();
+                    return;
+                }
+                return await resp.json();
+            } catch (e) {
+                console.error('加载会议列表失败', e);
+                return [];
+            }
+        }
+        
+        function showConferenceInfo(conference) {
+            currentConference = conference;
+            localStorage.setItem('currentConference', JSON.stringify(conference));
+            const info = document.getElementById('conferenceInfo');
+            document.getElementById('conferenceName').textContent = conference.title;
+            document.getElementById('conferenceCode').textContent = conference.code;
+            info.classList.remove('hidden');
+        }
+        
+        function hideConferenceInfo() {
+            document.getElementById('conferenceInfo').classList.add('hidden');
+        }
+        
+        function restoreConference() {
+            const saved = localStorage.getItem('currentConference');
+            if (saved) {
+                try {
+                    currentConference = JSON.parse(saved);
+                    showConferenceInfo(currentConference);
+                } catch (e) {
+                    console.error('恢复会议失败', e);
+                }
+            }
+        }
+        
+        async function openConferenceModal(callback) {
+            const conferences = await loadConferences();
+            const list = document.getElementById('conferenceList');
+            
+            if (conferences.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-tip">
+                        <div>暂无会议</div>
+                        <button class="create-conf-btn" onclick="goToCreateConference()">去创建会议</button>
+                    </div>
+                `;
+            } else {
+                list.innerHTML = conferences.map(c => `
+                    <div class="conference-item" onclick="selectConference(${c.id}, '${c.title}', '${c.code}')">
+                        <div class="conference-item-title">${c.title}</div>
+                        <div class="conference-item-info">编码: ${c.code} | 规模: ${c.scale || 0}人</div>
+                    </div>
+                `).join('');
+            }
+            
+            window._conferenceCallback = callback;
+            document.getElementById('conferenceModal').classList.add('active');
+        }
+        
+        function goToCreateConference() {
+            closeConferenceModal();
+            switchPage('conference');
+        }
+        
+        function closeConferenceModal() {
+            document.getElementById('conferenceModal').classList.remove('active');
+        }
+        
+        function selectConference(id, title, code) {
+            currentConference = { id, title, code };
+            showConferenceInfo(currentConference);
+            closeConferenceModal();
+            
+            if (window._conferenceCallback) {
+                window._conferenceCallback(id);
+                window._conferenceCallback = null;
+            } else if (currentPage === 'seating' || currentPage === 'transport') {
+                const frame = document.getElementById('contentFrame');
+                if (currentPage === 'seating') {
+                    frame.src = `/static/conference_manage.html?conference_id=${id}`;
+                } else {
+                    frame.src = `/static/transport.html?conference_id=${id}`;
+                }
+            } else if (currentPage === 'dashboard') {
+                const frame = document.getElementById('contentFrame');
+                frame.src = '/static/dashboard.html';
+            }
+        }
+        
+        function switchPage(page) {
+            currentPage = page;
+            
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.page === page);
+            });
+            
+            const frame = document.getElementById('contentFrame');
+            
+            switch(page) {
+                case 'dashboard':
+                    frame.src = '/static/dashboard.html';
+                    break;
+                case 'conference':
+                    frame.src = '/static/conference_list.html';
+                    break;
+                case 'seating':
+                    if (currentConference) {
+                        frame.src = `/static/conference_manage.html?conference_id=${currentConference.id}&tab=seating`;
+                    } else {
+                        openConferenceModal((id) => {
+                            frame.src = `/static/conference_manage.html?conference_id=${id}&tab=seating`;
+                        });
+                    }
+                    break;
+                case 'hotel':
+                    if (currentConference) {
+                        frame.src = `/static/conference_manage.html?conference_id=${currentConference.id}&tab=hotel`;
+                    } else {
+                        openConferenceModal((id) => {
+                            frame.src = `/static/conference_manage.html?conference_id=${id}&tab=hotel`;
+                        });
+                    }
+                    break;
+                case 'restaurant':
+                    if (currentConference) {
+                        frame.src = `/static/conference_manage.html?conference_id=${currentConference.id}&tab=restaurant`;
+                    } else {
+                        openConferenceModal((id) => {
+                            frame.src = `/static/conference_manage.html?conference_id=${id}&tab=restaurant`;
+                        });
+                    }
+                    break;
+                case 'transport':
+                    if (currentConference) {
+                        frame.src = `/static/transport.html?conference_id=${currentConference.id}`;
+                    } else {
+                        openConferenceModal((id) => {
+                            frame.src = `/static/transport.html?conference_id=${id}`;
+                        });
+                    }
+                    break;
+                case 'profile':
+                    frame.src = '/static/profile.html';
+                    break;
+            }
+        }
+        
+        if (checkAuth()) {
+            loadUserInfo();
+            restoreConference();
+            switchPage('dashboard');
+        }
+    </script>
+</body>
+</html>

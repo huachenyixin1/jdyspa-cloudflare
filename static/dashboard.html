@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据看板</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+        
+        .page-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .conference-info {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .info-label {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .info-value {
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .alert-banner {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .alert-banner.show {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .alert-icon {
+            font-size: 20px;
+        }
+        
+        .alert-text {
+            flex: 1;
+            color: #856404;
+            font-size: 14px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 16px;
+            border: 1px solid #eee;
+        }
+        
+        .stat-card.warning {
+            border-color: #ffc107;
+            background: #fffbeb;
+        }
+        
+        .stat-card.success {
+            border-color: #28a745;
+            background: #f0fff4;
+        }
+        
+        .stat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        
+        .stat-title {
+            font-size: 15px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .stat-badge {
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .stat-badge.warning {
+            background: #ffc107;
+            color: #856404;
+        }
+        
+        .stat-badge.success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-fill.blue { background: linear-gradient(90deg, #4a90d9, #6fb1fc); }
+        .progress-fill.green { background: linear-gradient(90deg, #28a745, #5cb85c); }
+        .progress-fill.orange { background: linear-gradient(90deg, #fd7e14, #ffc107); }
+        .progress-fill.purple { background: linear-gradient(90deg, #6f42c1, #9b59b6); }
+        
+        .stat-numbers {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .stat-main {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .stat-main span {
+            font-size: 14px;
+            font-weight: 400;
+            color: #666;
+        }
+        
+        .stat-detail {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .stat-detail .highlight {
+            color: #dc3545;
+            font-weight: 500;
+        }
+        
+        .stat-action {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #eee;
+        }
+        
+        .stat-action a {
+            color: #4a90d9;
+            text-decoration: none;
+            font-size: 13px;
+        }
+        
+        .stat-action a:hover {
+            text-decoration: underline;
+        }
+        
+        .history-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .history-card {
+            background: linear-gradient(135deg, #4a90d9 0%, #6fb1fc 100%);
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+            color: white;
+        }
+        
+        .history-card:nth-child(2) {
+            background: linear-gradient(135deg, #28a745 0%, #5cb85c 100%);
+        }
+        
+        .history-card:nth-child(3) {
+            background: linear-gradient(135deg, #fd7e14 0%, #ffc107 100%);
+        }
+        
+        .history-card:nth-child(4) {
+            background: linear-gradient(135deg, #6f42c1 0%, #9b59b6 100%);
+        }
+        
+        .history-value {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .history-label {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+        
+        .select-btn {
+            margin-top: 16px;
+            padding: 10px 24px;
+            background: #4A90D9;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .select-btn:hover {
+            background: #3a7bc8;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div id="alertBanner" class="alert-banner">
+        <span class="alert-icon">⚠️</span>
+        <span class="alert-text" id="alertText"></span>
+    </div>
+    
+    <div id="currentSection" class="section" style="display: none;">
+        <div class="section-title">当前会议状态</div>
+        
+        <div class="conference-info" id="conferenceInfo">
+            <div class="info-item">
+                <span class="info-label">会议名称：</span>
+                <span class="info-value" id="confTitle">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">会议日期：</span>
+                <span class="info-value" id="confDate">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">参会人数：</span>
+                <span class="info-value" id="confParticipants">-</span>
+            </div>
+        </div>
+        
+        <div class="stats-grid" id="statsGrid" style="margin-top: 20px;">
+            <div class="stat-card" id="seatingCard">
+                <div class="stat-header">
+                    <span class="stat-title">🪑 排座情况</span>
+                    <span class="stat-badge" id="seatingBadge">-</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill blue" id="seatingProgress" style="width: 0%"></div>
+                </div>
+                <div class="stat-numbers">
+                    <div class="stat-main"><span id="seatingRate">0</span><span>%</span></div>
+                    <div class="stat-detail">已分配 <span id="seatingAssigned">0</span> / <span id="seatingTotal">0</span> 人</div>
+                </div>
+                <div class="stat-detail" id="seatingUnassigned" style="margin-top: 8px;"></div>
+                <div class="stat-action">
+                    <a href="javascript:goToSeating()">前往排座管理 →</a>
+                </div>
+            </div>
+            
+            <div class="stat-card" id="hotelCard">
+                <div class="stat-header">
+                    <span class="stat-title">🏨 住宿情况</span>
+                    <span class="stat-badge" id="hotelBadge">-</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill green" id="hotelProgress" style="width: 0%"></div>
+                </div>
+                <div class="stat-numbers">
+                    <div class="stat-main"><span id="hotelRate">0</span><span>%</span></div>
+                    <div class="stat-detail">已分配 <span id="hotelAssigned">0</span> / <span id="hotelNeed">0</span> 人</div>
+                </div>
+                <div class="stat-detail" id="hotelUnassigned" style="margin-top: 8px;"></div>
+                <div class="stat-action">
+                    <a href="javascript:goToHotel()">前往住宿管理 →</a>
+                </div>
+            </div>
+            
+            <div class="stat-card" id="restaurantCard">
+                <div class="stat-header">
+                    <span class="stat-title">🍽️ 餐厅情况</span>
+                    <span class="stat-badge" id="restaurantBadge">-</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill orange" id="restaurantProgress" style="width: 0%"></div>
+                </div>
+                <div class="stat-numbers">
+                    <div class="stat-main"><span id="restaurantRate">0</span><span>%</span></div>
+                    <div class="stat-detail">已分配 <span id="restaurantAssigned">0</span> / <span id="restaurantNeed">0</span> 人</div>
+                </div>
+                <div class="stat-detail" id="restaurantUnassigned" style="margin-top: 8px;"></div>
+                <div class="stat-action">
+                    <a href="javascript:goToRestaurant()">前往餐厅管理 →</a>
+                </div>
+            </div>
+            
+            <div class="stat-card" id="transportCard">
+                <div class="stat-header">
+                    <span class="stat-title">🚗 接送情况</span>
+                    <span class="stat-badge" id="transportBadge">-</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill purple" id="transportProgress" style="width: 0%"></div>
+                </div>
+                <div class="stat-numbers">
+                    <div class="stat-main"><span id="transportRate">0</span><span>%</span></div>
+                    <div class="stat-detail">已分配 <span id="transportAssigned">0</span> / <span id="transportNeed">0</span> 人</div>
+                </div>
+                <div class="stat-detail" id="transportUnassigned" style="margin-top: 8px;"></div>
+                <div class="stat-action">
+                    <a href="javascript:goToTransport()">前往接送管理 →</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="emptyState" class="section">
+        <div class="empty-state">
+            <div class="empty-icon">📊</div>
+            <div>请选择一个会议查看统计数据</div>
+        </div>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">历史统计</div>
+        
+        <div class="history-stats" id="historyStats">
+            <div class="history-card">
+                <div class="history-value" id="totalConferences">-</div>
+                <div class="history-label">会议总数</div>
+            </div>
+            <div class="history-card">
+                <div class="history-value" id="totalParticipants">-</div>
+                <div class="history-label">参会总人数</div>
+            </div>
+            <div class="history-card">
+                <div class="history-value" id="thisMonth">-</div>
+                <div class="history-label">本月会议</div>
+            </div>
+            <div class="history-card">
+                <div class="history-value" id="ongoing">-</div>
+                <div class="history-label">进行中会议</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentConferenceId = null;
+        
+        function getHeaders() {
+            const token = localStorage.getItem('token');
+            return {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            };
+        }
+        
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.parent.location.href = '/login.html';
+                return false;
+            }
+            return true;
+        }
+        
+        function getCurrentConference() {
+            const saved = localStorage.getItem('currentConference');
+            if (saved) {
+                try {
+                    return JSON.parse(saved);
+                } catch (e) {
+                    return null;
+                }
+            }
+            return null;
+        }
+        
+        async function loadConferenceStats() {
+            const conference = getCurrentConference();
+            
+            if (!conference || !conference.id) {
+                document.getElementById('currentSection').style.display = 'none';
+                document.getElementById('emptyState').style.display = 'block';
+                document.getElementById('alertBanner').classList.remove('show');
+                document.querySelector('.empty-state').innerHTML = `
+                    <div class="empty-icon">📊</div>
+                    <div>请先选择一个会议</div>
+                    <button class="select-btn" onclick="selectConference()">选择会议</button>
+                `;
+                return;
+            }
+            
+            currentConferenceId = conference.id;
+            
+            try {
+                const res = await fetch(`/api/stats/conference/${conference.id}/overview`, { headers: getHeaders() });
+                if (!res.ok) throw new Error('获取数据失败');
+                
+                const data = await res.json();
+                renderConferenceStats(data);
+            } catch (e) {
+                console.error('加载统计数据失败', e);
+            }
+        }
+        
+        function selectConference() {
+            window.parent.openConferenceModal();
+        }
+        
+        function renderConferenceStats(data) {
+            document.getElementById('currentSection').style.display = 'block';
+            document.getElementById('emptyState').style.display = 'none';
+            
+            document.getElementById('confTitle').textContent = data.conference.title || '-';
+            document.getElementById('confDate').textContent = 
+                data.conference.start_date && data.conference.end_date 
+                    ? `${data.conference.start_date} ~ ${data.conference.end_date}` 
+                    : '-';
+            document.getElementById('confParticipants').textContent = data.total_participants + '人';
+            
+            renderStatCard('seating', data.seating, data.total_participants);
+            renderStatCard('hotel', data.hotel, data.hotel.need_count);
+            renderStatCard('restaurant', data.restaurant, data.restaurant.need_count);
+            renderStatCard('transport', data.transport, data.transport.need_count);
+            
+            updateAlertBanner(data);
+        }
+        
+        function renderStatCard(type, stats, total) {
+            const needCount = stats.need_count !== undefined ? stats.need_count : total;
+            const isNoNeed = needCount === 0;
+            const rate = isNoNeed ? 100 : (stats.rate || 0);
+            const isComplete = rate >= 100;
+            const hasWarning = !isNoNeed && stats.unassigned > 0;
+            
+            document.getElementById(`${type}Rate`).textContent = rate.toFixed(1);
+            document.getElementById(`${type}Progress`).style.width = rate + '%';
+            
+            const badge = document.getElementById(`${type}Badge`);
+            const card = document.getElementById(`${type}Card`);
+            
+            badge.className = 'stat-badge ' + (isComplete ? 'success' : 'warning');
+            badge.textContent = isComplete ? '已完成' : '进行中';
+            
+            card.className = 'stat-card ' + (isComplete ? 'success' : (hasWarning ? 'warning' : ''));
+            
+            if (type === 'seating') {
+                document.getElementById('seatingAssigned').textContent = stats.assigned;
+                document.getElementById('seatingTotal').textContent = stats.total;
+                document.getElementById('seatingUnassigned').innerHTML = 
+                    stats.unassigned > 0 
+                        ? `<span class="highlight">⚠️ 未分配：${stats.unassigned}人</span>` 
+                        : '✅ 全部已分配';
+            } else if (type === 'hotel') {
+                document.getElementById('hotelAssigned').textContent = stats.assigned;
+                document.getElementById('hotelNeed').textContent = needCount;
+                document.getElementById('hotelUnassigned').innerHTML = 
+                    isNoNeed 
+                        ? '无需安排' 
+                        : (stats.unassigned > 0 
+                            ? `<span class="highlight">⚠️ 未分配：${stats.unassigned}人</span>` 
+                            : '✅ 全部已分配');
+            } else if (type === 'restaurant') {
+                document.getElementById('restaurantAssigned').textContent = stats.assigned;
+                document.getElementById('restaurantNeed').textContent = needCount;
+                document.getElementById('restaurantUnassigned').innerHTML = 
+                    isNoNeed 
+                        ? '无需安排' 
+                        : (stats.unassigned > 0 
+                            ? `<span class="highlight">⚠️ 未分配：${stats.unassigned}人</span>` 
+                            : '✅ 全部已分配');
+            } else if (type === 'transport') {
+                document.getElementById('transportAssigned').textContent = stats.assigned;
+                document.getElementById('transportNeed').textContent = needCount;
+                document.getElementById('transportUnassigned').innerHTML = 
+                    isNoNeed 
+                        ? '无需安排' 
+                        : (stats.unassigned > 0 
+                            ? `<span class="highlight">⚠️ 未分配：${stats.unassigned}人</span>` 
+                            : '✅ 全部已分配');
+            }
+        }
+        
+        function updateAlertBanner(data) {
+            const alerts = [];
+            
+            if (data.seating.unassigned > 0) {
+                alerts.push(`排座 ${data.seating.unassigned}人未分配`);
+            }
+            if (data.hotel.need_count > 0 && data.hotel.unassigned > 0) {
+                alerts.push(`住宿 ${data.hotel.unassigned}人未分配`);
+            }
+            if (data.restaurant.need_count > 0 && data.restaurant.unassigned > 0) {
+                alerts.push(`餐厅 ${data.restaurant.unassigned}人未分配`);
+            }
+            if (data.transport.need_count > 0 && data.transport.unassigned > 0) {
+                alerts.push(`接送 ${data.transport.unassigned}人未分配`);
+            }
+            
+            const banner = document.getElementById('alertBanner');
+            const alertText = document.getElementById('alertText');
+            
+            if (alerts.length > 0) {
+                alertText.textContent = '以下项目有待安排：' + alerts.join('、');
+                banner.classList.add('show');
+            } else {
+                banner.classList.remove('show');
+            }
+        }
+        
+        async function loadHistoryStats() {
+            try {
+                const res = await fetch('/api/stats/history', { headers: getHeaders() });
+                if (!res.ok) throw new Error('获取数据失败');
+                
+                const data = await res.json();
+                
+                document.getElementById('totalConferences').textContent = data.total_conferences;
+                document.getElementById('totalParticipants').textContent = data.total_participants;
+                document.getElementById('thisMonth').textContent = data.this_month;
+                document.getElementById('ongoing').textContent = data.ongoing;
+            } catch (e) {
+                console.error('加载历史统计失败', e);
+            }
+        }
+        
+        function goToSeating() {
+            if (currentConferenceId) {
+                window.parent.switchPage('seating');
+            }
+        }
+        
+        function goToHotel() {
+            if (currentConferenceId) {
+                window.parent.switchPage('hotel');
+            }
+        }
+        
+        function goToRestaurant() {
+            if (currentConferenceId) {
+                window.parent.switchPage('restaurant');
+            }
+        }
+        
+        function goToTransport() {
+            if (currentConferenceId) {
+                window.parent.switchPage('transport');
+            }
+        }
+        
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'currentConference') {
+                loadConferenceStats();
+            }
+        });
+        
+        if (checkAuth()) {
+            loadConferenceStats();
+            loadHistoryStats();
+        }
+    </script>
+</body>
+</html>

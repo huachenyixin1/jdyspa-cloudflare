@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .profile-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .profile-header {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .avatar {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #5c9ce6 0%, #4a90d9 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 600;
+            color: white;
+            flex-shrink: 0;
+        }
+        
+        .user-info {
+            flex: 1;
+        }
+        
+        .username {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .user-id {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .card-body {
+            padding: 16px 20px;
+        }
+        
+        .package-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+        }
+        
+        .package-name {
+            font-size: 20px;
+            font-weight: 600;
+            color: #4a90d9;
+        }
+        
+        .package-expire {
+            font-size: 13px;
+            color: #666;
+            margin-top: 4px;
+        }
+        
+        .package-status {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-active {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .status-expired {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #5c9ce6 0%, #4a90d9 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(92, 156, 230, 0.3);
+        }
+        
+        .btn-outline {
+            background: white;
+            color: #5c9ce6;
+            border: 1px solid #5c9ce6;
+        }
+        
+        .btn-outline:hover {
+            background: #f5f9ff;
+        }
+        
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        
+        .order-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f5f5f5;
+        }
+        
+        .order-item:last-child {
+            border-bottom: none;
+        }
+        
+        .order-left {
+            flex: 1;
+        }
+        
+        .order-title {
+            font-size: 14px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .order-date {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+        
+        .order-right {
+            text-align: right;
+        }
+        
+        .order-amount {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .order-status {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+        
+        .order-status.paid {
+            color: #2e7d32;
+        }
+        
+        .invoice-actions {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .invoice-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .invoice-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f5f5f5;
+        }
+        
+        .invoice-item:last-child {
+            border-bottom: none;
+        }
+        
+        .invoice-left {
+            flex: 1;
+        }
+        
+        .invoice-title {
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .invoice-amount {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+        
+        .invoice-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .invoice-status.pending {
+            background: #fff3e0;
+            color: #e65100;
+        }
+        
+        .invoice-status.processing {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+        
+        .invoice-status.done {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .modal-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #5c9ce6;
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding: 16px 20px;
+            border-top: 1px solid #f0f0f0;
+        }
+        
+        .package-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .package-option {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .package-option:hover {
+            border-color: #5c9ce6;
+        }
+        
+        .package-option.selected {
+            border-color: #5c9ce6;
+            background: #f5f9ff;
+        }
+        
+        .package-option .name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .package-option .price {
+            font-size: 20px;
+            font-weight: 600;
+            color: #4a90d9;
+            margin: 8px 0;
+        }
+        
+        .package-option .price span {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .package-option .desc {
+            font-size: 11px;
+            color: #999;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #4a90d9;
+        }
+        
+        .stat-label {
+            font-size: 11px;
+            color: #999;
+            margin-top: 4px;
+        }
+        
+        .section-link {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid #f5f5f5;
+            cursor: pointer;
+        }
+        
+        .section-link:last-child {
+            border-bottom: none;
+        }
+        
+        .section-link-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .section-link-icon {
+            width: 36px;
+            height: 36px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .section-link-text {
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .section-link-arrow {
+            color: #ccc;
+            font-size: 14px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 30px;
+            color: #999;
+            font-size: 14px;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.75);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 24px;
+            font-size: 14px;
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .toast.show {
+            opacity: 1;
+        }
+
+        .confirm-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+        }
+
+        .confirm-modal.active {
+            display: flex;
+        }
+
+        .confirm-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            width: 280px;
+            text-align: center;
+        }
+
+        .confirm-message {
+            font-size: 15px;
+            color: #333;
+            margin-bottom: 20px;
+            line-height: 1.5;
+            white-space: pre-line;
+        }
+
+        .confirm-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .confirm-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .confirm-btn.cancel {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .confirm-btn.ok {
+            background: #5c9ce6;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="profile-container">
+        <div class="card">
+            <div class="card-body">
+                <div class="package-info">
+                    <div>
+                        <div class="package-name" id="packageName">基础版</div>
+                        <div class="package-expire" id="packageExpire">有效期至：2025-12-31</div>
+                    </div>
+                    <span class="package-status status-active" id="packageStatus">已激活</span>
+                </div>
+                <div style="margin-top: 16px; display: flex; gap: 12px;">
+                    <button class="btn btn-primary btn-small" onclick="openRenewModal()">续费</button>
+                    <button class="btn btn-outline btn-small" onclick="openUpgradeModal()">升级套餐</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">订单记录</span>
+                <button class="btn btn-outline btn-small" onclick="openOrderModal()">全部订单</button>
+            </div>
+            <div class="card-body">
+                <div class="order-list" id="orderList">
+                    <div class="empty-state">暂无订单记录</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">发票管理</span>
+            </div>
+            <div class="card-body">
+                <div class="invoice-actions">
+                    <button class="btn btn-primary btn-small" onclick="openInvoiceModal()">申请发票</button>
+                </div>
+                <div class="invoice-list" id="invoiceList">
+                    <div class="empty-state">暂无发票记录</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="renewModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">续费套餐</span>
+                <button class="modal-close" onclick="closeModal('renewModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="package-options" id="renewOptions">
+                    <div class="package-option" data-months="1" onclick="selectPackage(this, 'renew')">
+                        <div class="name">1个月</div>
+                        <div class="price">¥99<span>/月</span></div>
+                    </div>
+                    <div class="package-option selected" data-months="3" onclick="selectPackage(this, 'renew')">
+                        <div class="name">3个月</div>
+                        <div class="price">¥79<span>/月</span></div>
+                        <div class="desc">省¥60</div>
+                    </div>
+                    <div class="package-option" data-months="12" onclick="selectPackage(this, 'renew')">
+                        <div class="name">12个月</div>
+                        <div class="price">¥59<span>/月</span></div>
+                        <div class="desc">省¥480</div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>应付金额</label>
+                    <input type="text" id="renewAmount" value="¥237" readonly style="background: #f5f5f5;">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('renewModal')">取消</button>
+                <button class="btn btn-primary" onclick="submitRenew()">确认续费</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="upgradeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">升级套餐</span>
+                <button class="modal-close" onclick="closeModal('upgradeModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="package-options" id="upgradeOptions">
+                    <div class="package-option selected" data-type="basic">
+                        <div class="name">基础版</div>
+                        <div class="price">¥99<span>/月</span></div>
+                        <div class="desc">适合小型会议</div>
+                    </div>
+                    <div class="package-option" data-type="pro">
+                        <div class="name">专业版</div>
+                        <div class="price">¥199<span>/月</span></div>
+                        <div class="desc">适合中型会议</div>
+                    </div>
+                    <div class="package-option" data-type="enterprise">
+                        <div class="name">企业版</div>
+                        <div class="price">¥399<span>/月</span></div>
+                        <div class="desc">适合大型会议</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('upgradeModal')">取消</button>
+                <button class="btn btn-primary" onclick="submitUpgrade()">确认升级</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="invoiceModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">申请发票</span>
+                <button class="modal-close" onclick="closeModal('invoiceModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>选择订单</label>
+                    <select id="invoiceOrder">
+                        <option value="">请选择需要开票的订单</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>发票类型</label>
+                    <select id="invoiceType">
+                        <option value="electronic">电子发票</option>
+                        <option value="paper">纸质发票</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>发票抬头</label>
+                    <input type="text" id="invoiceTitle" placeholder="请输入发票抬头">
+                </div>
+                <div class="form-group">
+                    <label>纳税人识别号</label>
+                    <input type="text" id="invoiceTaxId" placeholder="请输入纳税人识别号">
+                </div>
+                <div class="form-group">
+                    <label>备注</label>
+                    <textarea id="invoiceNote" placeholder="其他需要说明的信息"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('invoiceModal')">取消</button>
+                <button class="btn btn-primary" onclick="submitInvoice()">提交申请</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="orderModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">全部订单</span>
+                <button class="modal-close" onclick="closeModal('orderModal')">×</button>
+            </div>
+            <div class="modal-body" style="max-height: 400px; overflow-y: auto;">
+                <div id="allOrderList"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="passwordModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">修改密码</span>
+                <button class="modal-close" onclick="closeModal('passwordModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>当前密码</label>
+                    <input type="password" id="oldPassword" placeholder="请输入当前密码">
+                </div>
+                <div class="form-group">
+                    <label>新密码</label>
+                    <input type="password" id="newPassword" placeholder="请输入新密码">
+                </div>
+                <div class="form-group">
+                    <label>确认新密码</label>
+                    <input type="password" id="confirmPassword" placeholder="请再次输入新密码">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('passwordModal')">取消</button>
+                <button class="btn btn-primary" onclick="changePassword()">确认修改</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="toast" id="toast"></div>
+    
+    <div class="confirm-modal" id="confirmModal">
+        <div class="confirm-content">
+            <div class="confirm-message" id="confirmMessage"></div>
+            <div class="confirm-buttons">
+                <button class="confirm-btn cancel" id="confirmCancel">取消</button>
+                <button class="confirm-btn ok" id="confirmOk">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let userData = null;
+        let orders = [];
+        let invoices = [];
+        let selectedRenewMonths = 3;
+        let selectedUpgradeType = 'basic';
+        
+        const PRICES = {
+            basic: 99,
+            pro: 199,
+            enterprise: 399
+        };
+        
+        function getHeaders() {
+            const token = localStorage.getItem('token');
+            return {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            };
+        }
+        
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.parent.location.href = '/login.html';
+                return false;
+            }
+            return true;
+        }
+        
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        function showConfirm(message) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('confirmModal');
+                const msgEl = document.getElementById('confirmMessage');
+                const okBtn = document.getElementById('confirmOk');
+                const cancelBtn = document.getElementById('confirmCancel');
+                
+                msgEl.textContent = message;
+                modal.classList.add('active');
+                
+                const handleOk = () => {
+                    modal.classList.remove('active');
+                    okBtn.removeEventListener('click', handleOk);
+                    cancelBtn.removeEventListener('click', handleCancel);
+                    resolve(true);
+                };
+                
+                const handleCancel = () => {
+                    modal.classList.remove('active');
+                    okBtn.removeEventListener('click', handleOk);
+                    cancelBtn.removeEventListener('click', handleCancel);
+                    resolve(false);
+                };
+                
+                okBtn.addEventListener('click', handleOk);
+                cancelBtn.addEventListener('click', handleCancel);
+            });
+        }
+        
+        function openModal(id) {
+            document.getElementById(id).classList.add('active');
+        }
+        
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+        
+        function loadLocalData() {
+            const savedOrders = localStorage.getItem('orders');
+            const savedInvoices = localStorage.getItem('invoices');
+            const savedPackage = localStorage.getItem('package');
+            
+            if (savedOrders) orders = JSON.parse(savedOrders);
+            if (savedInvoices) invoices = JSON.parse(savedInvoices);
+            
+            if (savedPackage) {
+                const pkg = JSON.parse(savedPackage);
+                document.getElementById('packageName').textContent = pkg.name || '基础版';
+                document.getElementById('packageExpire').textContent = '有效期至：' + (pkg.expire || '2025-12-31');
+                const status = document.getElementById('packageStatus');
+                if (pkg.status === 'expired') {
+                    status.textContent = '已过期';
+                    status.className = 'package-status status-expired';
+                } else {
+                    status.textContent = '已激活';
+                    status.className = 'package-status status-active';
+                }
+            }
+        }
+        
+        function saveLocalData() {
+            localStorage.setItem('orders', JSON.stringify(orders));
+            localStorage.setItem('invoices', JSON.stringify(invoices));
+        }
+        
+        async function loadUserInfo() {
+            try {
+                const resp = await fetch('/api/auth/me', { headers: getHeaders() });
+                if (resp.status === 401) {
+                    window.parent.location.href = '/login.html';
+                    return;
+                }
+                userData = await resp.json();
+                renderUserInfo();
+            } catch (e) {
+                console.error('加载用户信息失败', e);
+            }
+        }
+        
+        async function loadStats() {
+            try {
+                const resp = await fetch('/api/conferences/stats/summary', { headers: getHeaders() });
+                if (resp.ok) {
+                    const stats = await resp.json();
+                    document.getElementById('confCount').textContent = stats.conference_count || 0;
+                    document.getElementById('participantCount').textContent = stats.participant_count || 0;
+                    document.getElementById('taskCount').textContent = stats.task_count || 0;
+                }
+            } catch (e) {
+                console.error('加载统计数据失败', e);
+            }
+        }
+        
+        function renderUserInfo() {
+            if (!userData) return;
+            document.getElementById('avatar').textContent = (userData.username || 'U')[0].toUpperCase();
+            document.getElementById('username').textContent = userData.username || '-';
+            document.getElementById('userId').textContent = `ID: ${userData.id}`;
+        }
+        
+        function renderOrders() {
+            const list = document.getElementById('orderList');
+            const allList = document.getElementById('allOrderList');
+            
+            if (orders.length === 0) {
+                list.innerHTML = '<div class="empty-state">暂无订单记录</div>';
+                allList.innerHTML = '<div class="empty-state">暂无订单记录</div>';
+                return;
+            }
+            
+            const recentOrders = orders.slice(0, 3);
+            list.innerHTML = recentOrders.map(order => `
+                <div class="order-item">
+                    <div class="order-left">
+                        <div class="order-title">${order.title}</div>
+                        <div class="order-date">${order.date}</div>
+                    </div>
+                    <div class="order-right">
+                        <div class="order-amount">¥${order.amount}</div>
+                        <div class="order-status paid">${order.status}</div>
+                    </div>
+                </div>
+            `).join('');
+            
+            allList.innerHTML = orders.map(order => `
+                <div class="order-item">
+                    <div class="order-left">
+                        <div class="order-title">${order.title}</div>
+                        <div class="order-date">${order.date}</div>
+                    </div>
+                    <div class="order-right">
+                        <div class="order-amount">¥${order.amount}</div>
+                        <div class="order-status paid">${order.status}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function renderInvoices() {
+            const list = document.getElementById('invoiceList');
+            
+            if (invoices.length === 0) {
+                list.innerHTML = '<div class="empty-state">暂无发票记录</div>';
+                return;
+            }
+            
+            list.innerHTML = invoices.map(inv => `
+                <div class="invoice-item">
+                    <div class="invoice-left">
+                        <div class="invoice-title">${inv.title}</div>
+                        <div class="invoice-amount">¥${inv.amount}</div>
+                    </div>
+                    <span class="invoice-status ${inv.statusClass}">${inv.status}</span>
+                </div>
+            `).join('');
+        }
+        
+        function updateInvoiceOrderSelect() {
+            const select = document.getElementById('invoiceOrder');
+            const paidOrders = orders.filter(o => o.status === '已支付' && !o.invoiced);
+            select.innerHTML = '<option value="">请选择需要开票的订单</option>' +
+                paidOrders.map(o => `<option value="${o.id}">${o.title} - ¥${o.amount}</option>`).join('');
+        }
+        
+        function selectPackage(el, type) {
+            const container = el.parentElement;
+            container.querySelectorAll('.package-option').forEach(opt => opt.classList.remove('selected'));
+            el.classList.add('selected');
+            
+            if (type === 'renew') {
+                selectedRenewMonths = parseInt(el.dataset.months);
+                const prices = { 1: 99, 3: 79, 12: 59 };
+                const total = prices[selectedRenewMonths] * selectedRenewMonths;
+                document.getElementById('renewAmount').value = '¥' + total;
+            } else {
+                selectedUpgradeType = el.dataset.type;
+            }
+        }
+        
+        function openRenewModal() {
+            openModal('renewModal');
+        }
+        
+        function openUpgradeModal() {
+            openModal('upgradeModal');
+        }
+        
+        function openOrderModal() {
+            openModal('orderModal');
+        }
+        
+        function openInvoiceModal() {
+            updateInvoiceOrderSelect();
+            openModal('invoiceModal');
+        }
+        
+        function openPasswordModal() {
+            openModal('passwordModal');
+        }
+        
+        function submitRenew() {
+            const prices = { 1: 99, 3: 79, 12: 59 };
+            const total = prices[selectedRenewMonths] * selectedRenewMonths;
+            
+            const now = new Date();
+            const expire = new Date(now.setMonth(now.getMonth() + selectedRenewMonths));
+            
+            const order = {
+                id: Date.now(),
+                title: `续费${selectedRenewMonths}个月`,
+                amount: total,
+                date: new Date().toLocaleDateString('zh-CN'),
+                status: '已支付',
+                type: 'renew'
+            };
+            
+            orders.unshift(order);
+            
+            const pkg = JSON.parse(localStorage.getItem('package') || '{}');
+            pkg.expire = expire.toISOString().split('T')[0];
+            pkg.status = 'active';
+            localStorage.setItem('package', JSON.stringify(pkg));
+            
+            saveLocalData();
+            renderOrders();
+            loadLocalData();
+            closeModal('renewModal');
+            showToast('续费成功');
+        }
+        
+        function submitUpgrade() {
+            const price = PRICES[selectedUpgradeType];
+            const names = { basic: '基础版', pro: '专业版', enterprise: '企业版' };
+            
+            const order = {
+                id: Date.now(),
+                title: `升级${names[selectedUpgradeType]}`,
+                amount: price,
+                date: new Date().toLocaleDateString('zh-CN'),
+                status: '已支付',
+                type: 'upgrade'
+            };
+            
+            orders.unshift(order);
+            
+            const pkg = {
+                name: names[selectedUpgradeType],
+                type: selectedUpgradeType,
+                expire: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0],
+                status: 'active'
+            };
+            localStorage.setItem('package', JSON.stringify(pkg));
+            
+            saveLocalData();
+            renderOrders();
+            loadLocalData();
+            closeModal('upgradeModal');
+            showToast('升级成功');
+        }
+        
+        function submitInvoice() {
+            const orderId = document.getElementById('invoiceOrder').value;
+            const type = document.getElementById('invoiceType').value;
+            const title = document.getElementById('invoiceTitle').value.trim();
+            const taxId = document.getElementById('invoiceTaxId').value.trim();
+            const note = document.getElementById('invoiceNote').value.trim();
+            
+            if (!orderId) {
+                showToast('请选择订单');
+                return;
+            }
+            if (!title) {
+                showToast('请输入发票抬头');
+                return;
+            }
+            if (!taxId) {
+                showToast('请输入纳税人识别号');
+                return;
+            }
+            
+            const order = orders.find(o => o.id === parseInt(orderId));
+            if (order) {
+                order.invoiced = true;
+            }
+            
+            const invoice = {
+                id: Date.now(),
+                title: title,
+                amount: order ? order.amount : 0,
+                taxId: taxId,
+                type: type === 'electronic' ? '电子发票' : '纸质发票',
+                status: '处理中',
+                statusClass: 'processing',
+                date: new Date().toLocaleDateString('zh-CN')
+            };
+            
+            invoices.unshift(invoice);
+            saveLocalData();
+            renderInvoices();
+            renderOrders();
+            closeModal('invoiceModal');
+            showToast('发票申请已提交');
+            
+            document.getElementById('invoiceOrder').value = '';
+            document.getElementById('invoiceTitle').value = '';
+            document.getElementById('invoiceTaxId').value = '';
+            document.getElementById('invoiceNote').value = '';
+        }
+        
+        async function changePassword() {
+            const oldPassword = document.getElementById('oldPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (!oldPassword || !newPassword || !confirmPassword) {
+                showToast('请填写所有密码字段');
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                showToast('两次输入的新密码不一致');
+                return;
+            }
+            
+            if (newPassword.length < 6) {
+                showToast('新密码长度至少6位');
+                return;
+            }
+            
+            try {
+                const resp = await fetch('/api/auth/change-password', {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({
+                        old_password: oldPassword,
+                        new_password: newPassword
+                    })
+                });
+                
+                const data = await resp.json();
+                
+                if (resp.ok) {
+                    showToast('密码修改成功');
+                    closeModal('passwordModal');
+                    document.getElementById('oldPassword').value = '';
+                    document.getElementById('newPassword').value = '';
+                    document.getElementById('confirmPassword').value = '';
+                } else {
+                    showToast(data.detail || '修改失败');
+                }
+            } catch (e) {
+                showToast('网络错误');
+            }
+        }
+        
+        async function logout() {
+            const confirmed = await showConfirm('确定退出登录？');
+            if (confirmed) {
+                localStorage.removeItem('token');
+                window.parent.location.href = '/login.html';
+            }
+        }
+        
+        if (checkAuth()) {
+            loadLocalData();
+            loadUserInfo();
+            loadStats();
+            renderOrders();
+            renderInvoices();
+        }
+    </script>
+</body>
+</html>

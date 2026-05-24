@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>会议接待助手</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
+    <link rel="stylesheet" href="static/css/main.css">
+</head>
+<body>
+    <!-- 登录页 -->
+    <div id="page-login" class="page page-login">
+        <div class="login-container">
+            <div class="login-header">
+                <h1>会议接待助手</h1>
+            </div>
+            <div class="error-message" id="errorMessage"></div>
+            <form id="loginForm" onsubmit="event.preventDefault(); handleLogin();">
+                <div class="form-group">
+                    <label for="username">用户名</label>
+                    <input type="text" id="username" name="username" required placeholder="请输入用户名">
+                </div>
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" name="password" required placeholder="请输入密码">
+                </div>
+                <button type="submit" class="btn btn-block" id="loginBtn">登录</button>
+            </form>
+            <div class="login-links">
+                <a href="javascript:navigateTo('#forgot-password')" class="forgot-link">忘记密码？</a>
+                <span class="divider">|</span>
+                <span class="register-text">还没有账号？<a href="javascript:navigateTo('#register')">立即注册</a></span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 忘记密码页 -->
+    <div id="page-forgot-password" class="page page-forgot-password" style="display:none">
+        <div class="login-container">
+            <div class="login-header">
+                <h1>忘记密码</h1>
+                <p class="subtitle">请输入注册邮箱，密码将重置为 123456</p>
+            </div>
+            <div class="message" id="forgotMessage"></div>
+            <form id="forgotForm" onsubmit="event.preventDefault(); handleForgotPassword();">
+                <div class="form-group">
+                    <label for="forgot-email">邮箱地址</label>
+                    <input type="email" id="forgot-email" name="email" required placeholder="请输入注册时使用的邮箱">
+                </div>
+                <button type="submit" class="btn btn-block" id="forgotBtn">重置密码</button>
+            </form>
+            <div class="login-links">
+                <a href="javascript:navigateTo('#login')">返回登录</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 注册页 -->
+    <div id="page-register" class="page page-register" style="display:none">
+        <div class="register-container">
+            <div class="register-header">
+                <h1>会议接待助手</h1>
+            </div>
+            <div class="error-message" id="reg-errorMessage"></div>
+            <div class="success-message" id="reg-successMessage"></div>
+            <form id="registerForm" onsubmit="event.preventDefault(); handleRegister();">
+                <div class="form-group">
+                    <label for="reg-username">用户名</label>
+                    <input type="text" id="reg-username" name="username" required placeholder="请输入用户名">
+                </div>
+                <div class="form-group">
+                    <label for="reg-email">邮箱</label>
+                    <input type="email" id="reg-email" name="email" required placeholder="请输入邮箱">
+                </div>
+                <div class="form-group">
+                    <label for="reg-password">密码</label>
+                    <input type="password" id="reg-password" name="password" required placeholder="请输入密码">
+                </div>
+                <div class="form-group">
+                    <label for="reg-confirmPassword">确认密码</label>
+                    <input type="password" id="reg-confirmPassword" name="confirmPassword" required placeholder="请再次输入密码">
+                </div>
+                <button type="submit" class="btn btn-block" id="registerBtn">注册</button>
+            </form>
+            <div class="login-link">
+                已有账号？<a href="javascript:navigateTo('#login')">立即登录</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 主界面 -->
+    <div id="page-main" class="page page-main" style="display:none">
+        <!-- 顶部导航 -->
+        <div class="top-header">
+            <div class="header-left">
+                <button class="menu-toggle" onclick="toggleSidebar()">
+                    <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+                </button>
+                <span class="header-title">会议接待助手</span>
+                <div class="conference-info hidden" onclick="openConferenceModal()">
+                    <span class="conference-name" id="conferenceName">未选择会议</span>
+                    <span class="conference-code" id="conferenceCode"></span>
+                    <button class="switch-btn" onclick="event.stopPropagation(); openConferenceModal()">切换</button>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="user-info" onclick="toggleUserMenu()">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <span class="user-name" id="userName">用户</span>
+                </div>
+                <button class="logout-btn" onclick="logout()">退出登录</button>
+            </div>
+        </div>
+        
+        <!-- 左侧菜单 -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-menu">
+                <div class="menu-item active" data-page="dashboard" onclick="navigateTo('#dashboard')">
+                    <span class="menu-icon">📊</span>
+                    <span class="menu-text">数据看板</span>
+                </div>
+                <div class="menu-item" data-page="conference" onclick="navigateTo('#conference')">
+                    <span class="menu-icon">📋</span>
+                    <span class="menu-text">会议管理</span>
+                </div>
+                <div class="menu-item" data-page="seating" onclick="navigateTo('#participants')">
+                    <span class="menu-icon">🪑</span>
+                    <span class="menu-text">会务管理</span>
+                </div>
+                <div class="menu-item" data-page="transport" onclick="navigateTo('#transport')">
+                    <span class="menu-icon">🚗</span>
+                    <span class="menu-text">接送管理</span>
+                </div>
+                <div class="menu-item" data-page="profile" onclick="navigateTo('#profile')">
+                    <span class="menu-icon">👤</span>
+                    <span class="menu-text">我的信息</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 内容区 -->
+        <div class="main-content">
+            <!-- 数据看板 -->
+            <div id="view-dashboard" class="view" style="display:none">
+                <div id="alertBanner" class="alert-banner">
+                    <span class="alert-icon">⚠️</span>
+                    <span class="alert-text" id="alertText"></span>
+                </div>
+                
+                <div id="currentSection" class="section" style="display: none;">
+                    <div class="section-title">当前会议状态</div>
+                    
+                    <div class="conference-info" id="conferenceInfo">
+                        <div class="info-item">
+                            <span class="info-label">会议名称：</span>
+                            <span class="info-value" id="confTitle">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">会议日期：</span>
+                            <span class="info-value" id="confDate">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">参会人数：</span>
+                            <span class="info-value" id="confParticipants">-</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-grid" id="statsGrid" style="margin-top: 20px;">
+                        <div class="stat-card" id="seatingCard">
+                            <div class="stat-header">
+                                <span class="stat-title">🪑 排座情况</span>
+                                <span class="stat-badge" id="seatingBadge">-</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill blue" id="seatingProgress" style="width: 0%"></div>
+                            </div>
+                            <div class="stat-numbers">
+                                <div class="stat-main"><span id="seatingRate">0</span><span>%</span></div>
+                                <div class="stat-detail">已分配 <span id="seatingAssigned">0</span> / <span id="seatingTotal">0</span> 人</div>
+                            </div>
+                            <div class="stat-detail" id="seatingUnassigned" style="margin-top: 8px;"></div>
+                            <div class="stat-action">
+                                <a href="javascript:goToSeating()">前往排座管理 →</a>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card" id="hotelCard">
+                            <div class="stat-header">
+                                <span class="stat-title">🏨 住宿情况</span>
+                                <span class="stat-badge" id="hotelBadge">-</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill green" id="hotelProgress" style="width: 0%"></div>
+                            </div>
+                            <div class="stat-numbers">
+                                <div class="stat-main"><span id="hotelRate">0</span><span>%</span></div>
+                                <div class="stat-detail">已分配 <span id="hotelAssigned">0</span> / <span id="hotelNeed">0</span> 人</div>
+                            </div>
+                            <div class="stat-detail" id="hotelUnassigned" style="margin-top: 8px;"></div>
+                            <div class="stat-action">
+                                <a href="javascript:goToHotel()">前往住宿管理 →</a>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card" id="restaurantCard">
+                            <div class="stat-header">
+                                <span class="stat-title">🍽️ 餐厅情况</span>
+                                <span class="stat-badge" id="restaurantBadge">-</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill orange" id="restaurantProgress" style="width: 0%"></div>
+                            </div>
+                            <div class="stat-numbers">
+                                <div class="stat-main"><span id="restaurantRate">0</span><span>%</span></div>
+                                <div class="stat-detail">已分配 <span id="restaurantAssigned">0</span> / <span id="restaurantNeed">0</span> 人</div>
+                            </div>
+                            <div class="stat-detail" id="restaurantUnassigned" style="margin-top: 8px;"></div>
+                            <div class="stat-action">
+                                <a href="javascript:goToRestaurant()">前往餐厅管理 →</a>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card" id="transportCard">
+                            <div class="stat-header">
+                                <span class="stat-title">🚗 接送情况</span>
+                                <span class="stat-badge" id="transportBadge">-</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill purple" id="transportProgress" style="width: 0%"></div>
+                            </div>
+                            <div class="stat-numbers">
+                                <div class="stat-main"><span id="transportRate">0</span><span>%</span></div>
+                                <div class="stat-detail">已分配 <span id="transportAssigned">0</span> / <span id="transportNeed">0</span> 人</div>
+                            </div>
+                            <div class="stat-detail" id="transportUnassigned" style="margin-top: 8px;"></div>
+                            <div class="stat-action">
+                                <a href="javascript:goToTransport()">前往接送管理 →</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="emptyState" class="section">
+                    <div class="empty-state">
+                        <div class="empty-icon">📊</div>
+                        <div>请选择一个会议查看统计数据</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 会议列表 -->
+            <div id="view-conference-list" class="view" style="display:none">
+                <div id="conferenceList" class="conference-grid">
+                    <div class="loading">加载中...</div>
+                </div>
+                <button class="fab" onclick="showCreateModal()">+</button>
+                
+                <!-- 新建/编辑会议弹窗 -->
+                <div class="modal-overlay" id="createModal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 id="modalTitle">新建会议</h3>
+                            <button class="modal-close" onclick="closeModal()">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="conferenceForm">
+                                <input type="hidden" id="editId">
+                                <div class="form-group">
+                                    <label>会议名称 <span class="required">*</span></label>
+                                    <input type="text" id="title" required placeholder="请输入会议名称">
+                                </div>
+                                <div class="form-group">
+                                    <label>会议规模（人数） <span class="required">*</span></label>
+                                    <input type="number" id="scale" required min="1" placeholder="请输入参会人数">
+                                </div>
+                                <div class="form-group">
+                                    <label>会议日期 <span class="required">*</span></label>
+                                    <div class="date-row">
+                                        <input type="date" id="startDate" required>
+                                        <input type="date" id="endDate" required>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>会议地点</label>
+                                    <input type="text" id="location" placeholder="请输入会议地点">
+                                </div>
+                                <div class="form-group">
+                                    <label>会议目的</label>
+                                    <textarea id="purpose" rows="2" placeholder="请输入会议目的"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label>服务配置</label>
+                                    <div class="checkbox-group">
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="hasMeal">
+                                            <label for="hasMeal">用餐</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="hasHotel">
+                                            <label for="hasHotel">住宿</label>
+                                        </div>
+                                        <div class="checkbox-item">
+                                            <input type="checkbox" id="hasTransport">
+                                            <label for="hasTransport">接送</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+                            <button class="btn btn-primary" onclick="saveConference()">保存</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 创建会议 -->
+            <div id="view-conference-create" class="view" style="display:none">
+                <div class="page-header">
+                    <h1 class="page-title">创建会议</h1>
+                </div>
+                
+                <div class="create-form">
+                    <div class="form-section">
+                        <form id="conferenceCreateForm" onsubmit="event.preventDefault(); handleConferenceCreate();">
+                            <div class="form-group">
+                                <label>会议名称 <span class="required">*</span></label>
+                                <input type="text" id="create-title" name="title" placeholder="请输入会议名称" required>
+                            </div>
+                            <div class="form-group">
+                                <label>会议规模（人数） <span class="required">*</span></label>
+                                <input type="number" id="create-scale" name="scale" placeholder="请输入参会人数" min="1" required>
+                            </div>
+                            <div class="form-group">
+                                <label>会议日期 <span class="required">*</span></label>
+                                <div class="date-group">
+                                    <input type="date" id="create-startDate" name="startDate" required>
+                                    <input type="date" id="create-endDate" name="endDate" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>会议目的</label>
+                                <input type="text" id="create-purpose" name="purpose" placeholder="请输入会议目的（可选）">
+                            </div>
+                            <div class="form-group">
+                                <label>服务配置</label>
+                                <div class="checkbox-group">
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="create-hasMeal" name="hasMeal">
+                                        <label for="create-hasMeal">用餐</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="create-hasHotel" name="hasHotel">
+                                        <label for="create-hasHotel">住宿</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="create-hasTransport" name="hasTransport">
+                                        <label for="create-hasTransport">接送</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="button-group" style="display: flex; gap: 12px; margin-top: 20px;">
+                                <button type="submit" class="btn btn-primary" id="submitBtn">创建会议</button>
+                                <button type="button" class="btn btn-secondary" onclick="document.getElementById('conferenceCreateForm').reset()">清空</button>
+                            </div>
+                        </form>
+                        <div class="result" id="createResult"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 会议管理（参会人/排座/住宿/餐厅） -->
+            <div id="view-conference-manage" class="view" style="display:none">
+                <div class="tabs">
+                    <div class="tab-item active" data-tab="participants" onclick="switchConferenceTab('participants')">
+                        <span>👥</span><span>参会人</span>
+                    </div>
+                    <div class="tab-item" data-tab="seating" onclick="switchConferenceTab('seating')">
+                        <span>🪑</span><span>会场</span>
+                    </div>
+                    <div class="tab-item" data-tab="hotel" onclick="switchConferenceTab('hotel')">
+                        <span>🏨</span><span>住宿</span>
+                    </div>
+                    <div class="tab-item" data-tab="restaurant" onclick="switchConferenceTab('restaurant')">
+                        <span>🍽️</span><span>餐厅</span>
+                    </div>
+                </div>
+                
+                <div class="tab-content active" id="tab-participants">
+                    <div class="search-bar">
+                        <input type="text" id="searchInput" placeholder="🔍 搜索姓名、公司、部门、职位、头衔..." onkeyup="searchParticipants()">
+                    </div>
+                    <div class="section-header">
+                        <h3>👥 参会人管理</h3>
+                        <div>
+                            <button class="btn btn-primary" onclick="showAddParticipantModal()">➕ 添加</button>
+                            <button class="btn btn-primary" id="editBtn" onclick="editSelectedParticipants()" disabled>✏️ 编辑</button>
+                            <button class="btn btn-danger" id="deleteBtn" onclick="deleteSelectedParticipants()" disabled>🗑️ 删除 (<span id="selectedCount">0</span>)</button>
+                            <button class="btn btn-success" onclick="downloadTemplate()">📥 模板</button>
+                            <button class="btn btn-primary" onclick="showImportModal()">📤 导入</button>
+                            <button class="btn btn-warning" onclick="validateParticipants()">🔍 校验</button>
+                        </div>
+                    </div>
+                    <div class="participants-summary" id="participantsSummary" style="margin-bottom:15px;padding:10px;background:#f8f9fa;border-radius:6px;">
+                        <span>总人数: <strong id="totalParticipantCount">0</strong> 人</span> |
+                        <span>参会: <strong id="attendingCount">0</strong> 人</span> |
+                        <span>住宿: <strong id="hotelNeedCount">0</strong> 人</span> |
+                        <span>用餐: <strong id="mealNeedCount">0</strong> 人</span> |
+                        <span>接送: <strong id="transportNeedCount">0</strong> 人</span>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+                                    <th>ID</th>
+                                    <th>姓名</th>
+                                    <th>电话</th>
+                                    <th>公司</th>
+                                    <th>部门</th>
+                                    <th>职位</th>
+                                    <th>头衔</th>
+                                    <th>参会</th>
+                                    <th>用餐</th>
+                                    <th>住宿</th>
+                                    <th>接送</th>
+                                </tr>
+                            </thead>
+                            <tbody id="participantsTable">
+                                <tr><td colspan="12" class="text-center">暂无数据</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination">
+                        <button onclick="prevPage()" id="prevBtn">上一页</button>
+                        <span id="pageInfo">第 1 页，共 1 页</span>
+                        <button onclick="nextPage()" id="nextBtn">下一页</button>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="tab-seating">
+                    <div class="section-header">
+                        <h3>🪑 会场管理</h3>
+                        <div>
+                            <button class="btn btn-primary" onclick="showAddAreaModal()">➕ 添加区域</button>
+                            <button class="btn btn-info" id="toggleSeatingDetailBtn" onclick="toggleSeatingDetail()">📋 显示详情</button>
+                            <button class="btn btn-warning" onclick="showAssignRulesModal()">📋 分配规则</button>
+                            <button class="btn btn-info" onclick="showPriorityModal()">⚙️ 设置优先级</button>
+                            <button class="btn btn-success" onclick="autoAssignSeats()">🎲 自动分配</button>
+                            <button class="btn btn-danger" onclick="clearAllSeats()">🗑️ 清空分配</button>
+                            <button class="btn btn-secondary" onclick="exportToPDF()">📄 导出PDF</button>
+                        </div>
+                    </div>
+                    <div class="seating-summary" id="seatingSummary">
+                        <span>区域: <strong id="areaCount">0</strong> 个</span> |
+                        <span>座位: <strong id="seatCount">0</strong> 个</span> |
+                        <span>空余数: <strong id="seatingAvailableCount">0</strong> 个</span> |
+                        <span>参会人: <strong id="participantCount">0</strong> 人</span> |
+                        <span>已分配: <strong id="seatingAssignedCount">0</strong> 个</span> |
+                        <span>待分配: <strong id="seatingUnassignedCount" style="color:#e74c3c;">0</strong> 个</span>
+                    </div>
+                    <div class="seating-canvas" id="seatingCanvas">
+                        <div class="seating-areas" id="seatingAreas">
+                            <div class="empty-state">
+                                <div class="empty-icon">🪑</div>
+                                <div>暂无座位区域，请先添加</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="tab-hotel">
+                    <div class="section-header">
+                        <h3>🏨 住宿管理</h3>
+                        <div>
+                            <button class="btn btn-primary" onclick="showHotelModal()">➕ 添加酒店</button>
+                            <button class="btn btn-info" id="toggleHotelDetailBtn" onclick="toggleHotelDetail()">📋 显示详情</button>
+                            <button class="btn btn-success" onclick="autoAssignRooms()">🎲 自动分配</button>
+                            <button class="btn btn-danger" onclick="clearAllRoomAssignments()">🗑️ 清空分配</button>
+                            <button class="btn btn-secondary" onclick="exportHotelPDF()">📄 导出PDF</button>
+                        </div>
+                    </div>
+                    <div class="hotel-summary" id="hotelSummary" style="display:none;">
+                        <span>酒店: <strong id="hotelCount">0</strong> 家</span> |
+                        <span>房间: <strong id="hotelRoomCount">0</strong> 个</span> |
+                        <span>总容量: <strong id="hotelTotalCapacity">0</strong> 人</span> |
+                        <span>空余数: <strong id="hotelAvailableCount">0</strong> 人</span> |
+                        <span>参会人: <strong id="hotelParticipantCount">0</strong> 人</span> |
+                        <span>已分配: <strong id="hotelAssignedCount">0</strong> 人</span> |
+                        <span>待分配: <strong id="hotelUnassignedCount" style="color:#e74c3c;">0</strong> 人</span>
+                    </div>
+                    <div id="hotelList">
+                        <div class="empty-state">
+                            <div class="empty-icon">🏨</div>
+                            <div>暂无酒店信息</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="tab-restaurant">
+                    <div class="section-header">
+                        <h3>🍽️ 餐厅管理</h3>
+                        <div>
+                            <button class="btn btn-primary" onclick="showRestaurantModal()">➕ 添加餐厅</button>
+                            <button class="btn btn-info" id="toggleRestaurantDetailBtn" onclick="toggleRestaurantDetail()">📋 显示详情</button>
+                            <button class="btn btn-success" onclick="autoAssignTables()">🎲 自动分配</button>
+                            <button class="btn btn-danger" onclick="clearAllTableAssignments()">🗑️ 清空分配</button>
+                            <button class="btn btn-secondary" onclick="exportRestaurantPDF()">📄 导出PDF</button>
+                        </div>
+                    </div>
+                    <div class="restaurant-summary" id="restaurantSummary" style="display:none;">
+                        <span>餐厅: <strong id="restaurantCount">0</strong> 家</span> |
+                        <span>桌位: <strong id="restaurantTableCount">0</strong> 个</span> |
+                        <span>总容量: <strong id="restaurantTotalCapacity">0</strong> 人</span> |
+                        <span>空余数: <strong id="restaurantAvailableCount">0</strong> 人</span> |
+                        <span>参会人: <strong id="restaurantParticipantCount">0</strong> 人</span> |
+                        <span>已分配: <strong id="restaurantAssignedCount">0</strong> 人</span> |
+                        <span>待分配: <strong id="restaurantUnassignedCount" style="color:#e74c3c;">0</strong> 人</span>
+                    </div>
+                    <div id="restaurantList">
+                        <div class="empty-state">
+                            <div class="empty-icon">🍽️</div>
+                            <div>暂无餐厅信息</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 接送管理 -->
+            <div id="view-transport" class="view" style="display:none">
+                <div class="transport-header" style="display:flex;justify-content:space-between;align-items:center;padding:10px 15px;background:#fff;border-bottom:1px solid #e0e0e0;">
+                    <div class="transport-tabs" style="display:flex;gap:8px;">
+                        <button class="transport-tab-btn active" data-tab="timeline" onclick="switchTransportTab('timeline')" style="padding:10px 16px;border:1px solid #4a90d9;background:#e8f4fd;border-radius:6px;font-size:13px;cursor:pointer;color:#4a90d9;">📅 车辆排班</button>
+                        <button class="transport-tab-btn" data-tab="vehicles" onclick="switchTransportTab('vehicles')" style="padding:10px 16px;border:1px solid #e0e0e0;background:#fff;border-radius:6px;font-size:13px;cursor:pointer;color:#666;">🚗 车辆管理</button>
+                    </div>
+                    <div class="transport-date-nav" style="display:flex;align-items:center;gap:8px;">
+                        <button class="btn-icon" onclick="changeDate(-1)" style="width:32px;height:32px;border:1px solid #ddd;background:#fff;border-radius:4px;cursor:pointer;">‹</button>
+                        <span id="transportDate" style="font-size:14px;min-width:60px;text-align:center;">今天</span>
+                        <button class="btn-icon" onclick="changeDate(1)" style="width:32px;height:32px;border:1px solid #ddd;background:#fff;border-radius:4px;cursor:pointer;">›</button>
+                        <button class="btn btn-secondary" onclick="exportTransportPDF()" style="margin-left:10px;padding:6px 12px;font-size:13px;">📄 导出</button>
+                    </div>
+                </div>
+                
+                <div class="transport-tab-panel active" id="transport-tab-timeline">
+                    <div class="timeline-wrapper">
+                        <div class="timeline-corner">时间</div>
+                        <div class="timeline-header-scroll" id="transportHeaderScroll">
+                            <div class="vehicles-row" id="transportVehiclesHeader"></div>
+                        </div>
+                        <div class="timeline-time-scroll" id="transportTimeScroll">
+                            <div id="transportTimeColumn"></div>
+                        </div>
+                        <div class="timeline-schedule-scroll" id="transportScheduleScroll">
+                            <div class="timeline-content" id="transportTimelineContent"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="transport-tab-panel" id="transport-tab-vehicles">
+                    <div class="transport-vehicle-list" id="transportVehicleList"></div>
+                </div>
+                
+                <button class="fab" id="transportFab" onclick="handleTransportFab()">+</button>
+            </div>
+            
+            <!-- 我的信息 -->
+            <div id="view-profile" class="view" style="display:none">
+                <div class="page-header">
+                    <h1 class="page-title">我的信息</h1>
+                </div>
+                
+                <div class="card">
+                    <div class="card-body">
+                        <div class="package-info">
+                            <div>
+                                <div class="package-name">基础版</div>
+                                <div class="package-expire">有效期至：2025-12-31</div>
+                            </div>
+                            <span class="package-status status-active">已激活</span>
+                        </div>
+                        <div style="margin-top: 16px; display: flex; gap: 12px;">
+                            <button class="btn btn-primary btn-small" onclick="openRenewModal()">续费</button>
+                            <button class="btn btn-outline btn-small" onclick="openUpgradeModal()">升级套餐</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">订单记录</span>
+                        <button class="btn btn-outline btn-small" onclick="openOrderModal()">全部订单</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="order-list">
+                            <div class="empty-state">暂无订单记录</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">发票管理</span>
+                    </div>
+                    <div class="card-body">
+                        <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                            <button class="btn btn-primary btn-small" onclick="openInvoiceModal()">申请发票</button>
+                        </div>
+                        <div class="invoice-list">
+                            <div class="empty-state">暂无发票记录</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 参会人管理弹窗 -->
+        <div class="modal-overlay" id="participantModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="participantModalTitle">添加参会人</h3>
+                    <button class="modal-close" onclick="closeParticipantModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editParticipantId">
+                    <div class="form-group">
+                        <label>姓名 <span class="required">*</span></label>
+                        <input type="text" id="participantName" placeholder="请输入姓名">
+                    </div>
+                    <div class="form-group">
+                        <label>电话</label>
+                        <input type="text" id="participantPhone" placeholder="请输入电话">
+                    </div>
+                    <div class="form-group">
+                        <label>公司</label>
+                        <input type="text" id="participantCompany" placeholder="请输入公司">
+                    </div>
+                    <div class="form-group">
+                        <label>部门</label>
+                        <input type="text" id="participantDepartment" placeholder="请输入部门">
+                    </div>
+                    <div class="form-group">
+                        <label>职位</label>
+                        <input type="text" id="participantPosition" placeholder="请输入职位">
+                    </div>
+                    <div class="form-group">
+                        <label>头衔</label>
+                        <input type="text" id="participantTitle" placeholder="请输入头衔">
+                    </div>
+                    <div class="form-group">
+                        <label>服务需求</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="participantAttending" checked>
+                                <label for="participantAttending">参会</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="participantMeal">
+                                <label for="participantMeal">用餐</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="participantHotel">
+                                <label for="participantHotel">住宿</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="participantTransport">
+                                <label for="participantTransport">接送</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeParticipantModal()">取消</button>
+                    <button class="btn btn-primary" onclick="saveParticipant()">保存</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 导入弹窗 -->
+        <div class="modal-overlay" id="importModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>导入参会人</h3>
+                    <button class="modal-close" onclick="closeImportModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="file-upload" onclick="document.getElementById('importFile').click()">
+                        <input type="file" id="importFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleFileSelect(this)">
+                        <div style="font-size: 48px; margin-bottom: 10px;">📁</div>
+                        <div>点击选择文件或拖拽文件到此处</div>
+                        <div style="font-size: 12px; color: #999; margin-top: 8px;">支持 .xlsx, .xls, .csv 格式</div>
+                    </div>
+                    <div id="importPreview" style="margin-top: 15px; display: none;">
+                        <div style="font-weight: 600; margin-bottom: 8px;">预览：</div>
+                        <div id="importPreviewContent"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeImportModal()">取消</button>
+                    <button class="btn btn-primary" onclick="confirmImport()">确认导入</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 酒店弹窗 -->
+        <div class="modal-overlay" id="hotelModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="hotelModalTitle">添加酒店</h3>
+                    <button class="modal-close" onclick="closeHotelModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editHotelId">
+                    <div class="form-group">
+                        <label>酒店名称 <span class="required">*</span></label>
+                        <input type="text" id="hotelName" placeholder="请输入酒店名称">
+                    </div>
+                    <div class="form-group">
+                        <label>位置</label>
+                        <input type="text" id="hotelLocation" placeholder="请输入位置">
+                    </div>
+                    <div class="form-group">
+                        <label>联系人/电话</label>
+                        <input type="text" id="hotelContact" placeholder="请输入联系人/电话">
+                    </div>
+                    <div class="form-group">
+                        <label>备注</label>
+                        <textarea id="hotelNote" rows="3" placeholder="请输入备注"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeHotelModal()">取消</button>
+                    <button class="btn btn-primary" onclick="saveHotel()">保存</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 房间弹窗 -->
+        <div class="modal-overlay" id="roomModal">
+            <div class="modal-content" style="max-width: 520px;">
+                <div class="modal-header">
+                    <h3>批量添加房间</h3>
+                    <button class="modal-close" onclick="closeRoomModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="roomHotelId">
+                    <div class="form-group">
+                        <label>房间配置</label>
+                        <div style="font-size: 12px; color: #666; margin-bottom: 5px;">
+                            支持格式：每行一个房间号，如：101；范围格式，如：101~105
+                        </div>
+                        <textarea id="roomNumbers" rows="6" placeholder="101&#10;102~105&#10;201"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>房间类型</label>
+                        <select id="roomType">
+                            <option value="single">单人间</option>
+                            <option value="double">双人间</option>
+                            <option value="suite">套房</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeRoomModal()">取消</button>
+                    <button class="btn btn-primary" onclick="saveRooms()">保存</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 餐厅弹窗 -->
+        <div class="modal-overlay" id="restaurantModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="restaurantModalTitle">添加餐厅</h3>
+                    <button class="modal-close" onclick="closeRestaurantModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editRestaurantId">
+                    <div class="form-group">
+                        <label>餐厅名称 <span class="required">*</span></label>
+                        <input type="text" id="restaurantName" placeholder="请输入餐厅名称">
+                    </div>
+                    <div class="form-group">
+                        <label>地址</label>
+                        <input type="text" id="restaurantAddress" placeholder="请输入地址">
+                    </div>
+                    <div class="form-group">
+                        <label>总容量（人）</label>
+                        <input type="number" id="restaurantCapacity" value="0" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>备注</label>
+                        <textarea id="restaurantNote" rows="3" placeholder="请输入备注"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeRestaurantModal()">取消</button>
+                    <button class="btn btn-primary" onclick="saveRestaurant()">保存</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 桌位弹窗 -->
+        <div class="modal-overlay" id="tableModal">
+            <div class="modal-content" style="max-width: 520px;">
+                <div class="modal-header">
+                    <h3>批量添加桌位</h3>
+                    <button class="modal-close" onclick="closeTableModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="tableRestaurantId">
+                    <div class="form-group">
+                        <label>桌位类型</label>
+                        <select id="tableType" onchange="updateTableNamePrefix()">
+                            <option value="round">包间</option>
+                            <option value="long">长桌</option>
+                            <option value="hall">大厅</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>每个桌位座位数</label>
+                        <input type="number" id="tableCapacity" value="10" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>数量</label>
+                        <input type="number" id="tableQuantity" value="1" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>名称前缀</label>
+                        <input type="text" id="tableNamePrefix" placeholder="如：圆桌、VIP包间" value="圆桌">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeTableModal()">取消</button>
+                    <button class="btn btn-primary" onclick="saveTables()">保存</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 餐厅分配弹窗 -->
+        <div class="modal-overlay" id="restaurantAssignModal">
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h3>分配座位</h3>
+                    <button class="modal-close" onclick="closeRestaurantAssignModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="assignTableId">
+                    <div class="form-group">
+                        <label>按公司过滤</label>
+                        <select id="assignCompanyFilter" onchange="onCompanyFilterChange(this.value)">
+                            <option value="">全部公司</option>
+                        </select>
+                    </div>
+                    <div id="participantCheckboxes" style="max-height: 300px; overflow-y: auto;">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeRestaurantAssignModal()">取消</button>
+                    <button class="btn btn-primary" onclick="saveAssignment()">保存</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 区域弹窗 -->
+        <div class="modal-overlay" id="areaModal">
+            <div class="modal-content" style="max-width: 520px;">
+                <div class="modal-header">
+                    <h3 id="areaModalTitle">添加区域</h3>
+                    <button class="modal-close" onclick="closeAreaModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editAreaId">
+                    <div class="form-group">
+                        <label>区域名称 *</label>
+                        <input type="text" id="areaName" placeholder="如：主席台、参会区">
+                    </div>
+                    <div class="form-group">
+                        <label>区域类型 *</label>
+                        <select id="areaType" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;" onchange="onAreaTypeChange(this.value)">
+                            <option value="rect">矩形（标准矩形桌）</option>
+                            <option value="hollow">回型（空心矩形/U型）</option>
+                            <option value="face">面对面（两排对面）</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="rectConfig">
+                        <label>每行座位数（用逗号分隔）</label>
+                        <input type="text" id="areaRows" placeholder="如：8,8,10,10" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:6px;">
+                        <p style="font-size:12px;color:#999;margin-top:5px;">示例：8,8,10,10 表示4排，每排分别是8、8、10、10个座位</p>
+                    </div>
+                    <div class="form-group" id="hollowConfig" style="display:none;">
+                        <label>回型布局（上下左右座位数）</label>
+                        <div style="display:flex;gap:10px;">
+                            <div style="flex:1;">
+                                <label style="font-size:12px;">上边</label>
+                                <input type="number" id="hollowTop" value="5" min="1" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+                            </div>
+                            <div style="flex:1;">
+                                <label style="font-size:12px;">下边</label>
+                                <input type="number" id="hollowBottom" value="5" min="1" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+                            </div>
+                            <div style="flex:1;">
+                                <label style="font-size:12px;">左边</label>
+                                <input type="number" id="hollowLeft" value="3" min="1" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+                            </div>
+                            <div style="flex:1;">
+                                <label style="font-size:12px;">右边</label>
+                                <input type="number" id="hollowRight" value="3" min="1" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group" id="faceConfig" style="display:none;">
+                        <label>每边座位数</label>
+                        <input type="number" id="faceSeats" value="8" min="1" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:6px;">
+                        <p style="font-size:12px;color:#999;margin-top:5px;">面对面区域两边各有相同数量的座位</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeAreaModal()">取消</button>
+                    <button class="btn btn-primary" onclick="saveArea()">保存</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 分配规则弹窗 -->
+        <div class="modal-overlay" id="assignRulesModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>分配规则</h3>
+                    <button class="modal-close" onclick="closeAssignRulesModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>排列方式</label>
+                        <select id="arrangeMode" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+                            <option value="middle">中间优先（先中间后两边）</option>
+                            <option value="left">从左到右</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>优先级字段选择（第1优先级权重最高）</label>
+                        <div style="display:flex;flex-direction:column;gap:8px;">
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <span style="width:80px;">第1优先:</span>
+                                <select id="priority1" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:6px;">
+                                    <option value="position">职位</option>
+                                    <option value="company">公司</option>
+                                    <option value="dept">部门</option>
+                                </select>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <span style="width:80px;">第2优先:</span>
+                                <select id="priority2" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:6px;">
+                                    <option value="company">公司</option>
+                                    <option value="position">职位</option>
+                                    <option value="dept">部门</option>
+                                </select>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <span style="width:80px;">第3优先:</span>
+                                <select id="priority3" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:6px;">
+                                    <option value="dept">部门</option>
+                                    <option value="position">职位</option>
+                                    <option value="company">公司</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeAssignRulesModal()">取消</button>
+                    <button class="btn btn-primary" onclick="saveAssignRules()">保存</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 优先级设置弹窗 -->
+        <div class="modal-overlay" id="priorityModal">
+            <div class="modal-content" style="max-width:600px;">
+                <div class="modal-header">
+                    <h3>设置优先级</h3>
+                    <button class="modal-close" onclick="closePriorityModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <button class="btn btn-small" id="tabPosition" onclick="switchPriorityTab('position')" style="background:#007bff;color:white;">职位</button>
+                        <button class="btn btn-small" id="tabCompany" onclick="switchPriorityTab('company')" style="background:#6c757d;color:white;">公司</button>
+                    </div>
+                    <div id="priorityTableContainer" style="max-height:400px;overflow-y:auto;">
+                        <table style="width:100%;border-collapse:collapse;">
+                            <thead style="position:sticky;top:0;background:#f8f9fa;">
+                                <tr>
+                                    <th style="padding:10px;text-align:left;border-bottom:2px solid #dee2e6;width:50%;">名称</th>
+                                    <th style="padding:10px;text-align:left;border-bottom:2px solid #dee2e6;width:50%;">优先级</th>
+                                </tr>
+                            </thead>
+                            <tbody id="priorityTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top:10px;padding:10px;background:#f8f9fa;border-radius:6px;font-size:12px;color:#666;">
+                        <strong>支持粘贴：</strong>从Excel复制多行，格式"名称,优先级"
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closePriorityModal()">取消</button>
+                    <button class="btn btn-primary" onclick="savePriorityConfig()">保存</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 会议选择弹窗 -->
+        <div class="modal-overlay" id="conference-select-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>选择会议</h3>
+                    <button class="modal-close" onclick="closeConferenceModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="conference-options-list">
+                        <div class="loading">加载中...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 用户菜单 -->
+        <div class="user-menu" id="userMenu">
+            <div class="user-menu-item" onclick="openPasswordModal()">修改密码</div>
+        </div>
+        
+        <!-- 修改密码弹窗 -->
+        <div class="modal-overlay" id="passwordModal">
+            <div class="modal-content" style="max-width: 360px;">
+                <div class="modal-header">
+                    <h3>修改密码</h3>
+                    <button class="modal-close" onclick="closePasswordModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>当前密码</label>
+                        <input type="password" id="oldPassword" placeholder="请输入当前密码">
+                    </div>
+                    <div class="form-group">
+                        <label>新密码</label>
+                        <input type="password" id="newPassword" placeholder="请输入新密码">
+                    </div>
+                    <div class="form-group">
+                        <label>确认新密码</label>
+                        <input type="password" id="confirmPassword" placeholder="请再次输入新密码">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closePasswordModal()">取消</button>
+                    <button class="btn btn-primary" onclick="submitPassword()">确认修改</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 续费弹窗 -->
+        <div class="modal-overlay" id="renewModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>续费套餐</h3>
+                    <button class="modal-close" onclick="closeModal('renewModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="package-options" id="renewOptions">
+                        <div class="package-option" data-months="1" onclick="selectPackage(this, 'renew')">
+                            <div class="name">1个月</div>
+                            <div class="price">¥99<span>/月</span></div>
+                        </div>
+                        <div class="package-option selected" data-months="3" onclick="selectPackage(this, 'renew')">
+                            <div class="name">3个月</div>
+                            <div class="price">¥79<span>/月</span></div>
+                            <div class="desc">省¥60</div>
+                        </div>
+                        <div class="package-option" data-months="12" onclick="selectPackage(this, 'renew')">
+                            <div class="name">12个月</div>
+                            <div class="price">¥59<span>/月</span></div>
+                            <div class="desc">省¥480</div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>应付金额</label>
+                        <input type="text" id="renewAmount" value="¥237" readonly style="background: #f5f5f5;">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeModal('renewModal')">取消</button>
+                    <button class="btn btn-primary" onclick="submitRenew()">确认续费</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 升级弹窗 -->
+        <div class="modal-overlay" id="upgradeModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>升级套餐</h3>
+                    <button class="modal-close" onclick="closeModal('upgradeModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="package-options" id="upgradeOptions">
+                        <div class="package-option selected" data-type="basic">
+                            <div class="name">基础版</div>
+                            <div class="price">¥99<span>/月</span></div>
+                            <div class="desc">适合小型会议</div>
+                        </div>
+                        <div class="package-option" data-type="pro">
+                            <div class="name">专业版</div>
+                            <div class="price">¥199<span>/月</span></div>
+                            <div class="desc">适合中型会议</div>
+                        </div>
+                        <div class="package-option" data-type="enterprise">
+                            <div class="name">企业版</div>
+                            <div class="price">¥399<span>/月</span></div>
+                            <div class="desc">适合大型会议</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeModal('upgradeModal')">取消</button>
+                    <button class="btn btn-primary" onclick="submitUpgrade()">确认升级</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 发票弹窗 -->
+        <div class="modal-overlay" id="invoiceModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>申请发票</h3>
+                    <button class="modal-close" onclick="closeModal('invoiceModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>选择订单</label>
+                        <select id="invoiceOrder">
+                            <option value="">请选择需要开票的订单</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>发票类型</label>
+                        <select id="invoiceType">
+                            <option value="electronic">电子发票</option>
+                            <option value="paper">纸质发票</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>发票抬头</label>
+                        <input type="text" id="invoiceTitle" placeholder="请输入发票抬头">
+                    </div>
+                    <div class="form-group">
+                        <label>纳税人识别号</label>
+                        <input type="text" id="invoiceTaxId" placeholder="请输入纳税人识别号">
+                    </div>
+                    <div class="form-group">
+                        <label>备注</label>
+                        <textarea id="invoiceNote" placeholder="其他需要说明的信息" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeModal('invoiceModal')">取消</button>
+                    <button class="btn btn-primary" onclick="submitInvoice()">提交申请</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 订单弹窗 -->
+        <div class="modal-overlay" id="orderModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>全部订单</h3>
+                    <button class="modal-close" onclick="closeModal('orderModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="empty-state">暂无订单记录</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 接送管理 - 任务模态框 -->
+        <div class="modal-overlay" id="taskModal">
+            <div class="modal-content" style="max-width: 520px;">
+                <div class="modal-header">
+                    <h3 id="taskModalTitle">新建行程</h3>
+                    <button class="modal-close" onclick="closeTaskModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="taskId">
+                    <div class="form-row" style="display:flex;gap:12px;margin-bottom:12px;">
+                        <label class="radio-label" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;cursor:pointer;">
+                            <input type="radio" name="taskType" value="pickup" checked style="display:none;">
+                            <span>🛬 接</span>
+                        </label>
+                        <label class="radio-label" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;cursor:pointer;">
+                            <input type="radio" name="taskType" value="dropoff" style="display:none;">
+                            <span>🛫 送</span>
+                        </label>
+                        <select id="taskVehicle" class="form-select" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;">
+                            <option value="">选择车辆</option>
+                        </select>
+                    </div>
+                    <div class="form-row" style="display:flex;gap:12px;margin-bottom:12px;">
+                        <input type="date" id="taskDate" class="form-input" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;">
+                        <input type="time" id="taskStartTime" class="form-input" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;">
+                        <input type="time" id="taskEndTime" class="form-input" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;">
+                    </div>
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <input type="text" id="taskFrom" class="form-input" placeholder="出发地" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;">
+                            <span>→</span>
+                            <input type="text" id="taskTo" class="form-input" placeholder="目的地" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;">
+                        </div>
+                        <input type="hidden" id="taskFromLat">
+                        <input type="hidden" id="taskFromLng">
+                        <input type="hidden" id="taskToLat">
+                        <input type="hidden" id="taskToLng">
+                    </div>
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <label style="display:block;margin-bottom:6px;font-size:13px;font-weight:500;">参会人</label>
+                        <select id="companySelect" class="form-select" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;" onchange="selectByCompany()">
+                            <option value="">按公司选择</option>
+                        </select>
+                        <div id="personSelector" style="display:flex;flex-wrap:wrap;gap:8px;max-height:120px;overflow-y:auto;padding:4px;border:1px solid #eee;border-radius:6px;"></div>
+                        <div id="selectionInfo" style="font-size:12px;color:#666;margin-top:6px;">已选 0 人</div>
+                    </div>
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <div style="display:flex;gap:8px;">
+                            <input type="text" id="escortName" class="form-input" placeholder="陪同人员" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;">
+                            <input type="tel" id="escortPhone" class="form-input" placeholder="陪同电话" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:6px;">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <input type="text" id="taskNote" class="form-input" placeholder="备注（航班号、特殊需求等）" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
+                        <div style="font-size:12px;color:#e67e22;margin-top:4px;">提示：录入陪同人员时会占用一个座位</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeTaskModal()">取消</button>
+                    <button class="btn btn-primary" onclick="saveTask()">保存</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 接送管理 - 详情模态框 -->
+        <div class="modal-overlay" id="detailModal">
+            <div class="modal-content" style="max-width: 480px;">
+                <div class="modal-header">
+                    <h3>行程详情</h3>
+                    <button class="modal-close" onclick="closeDetailModal()">&times;</button>
+                </div>
+                <div class="modal-body" id="detailBody"></div>
+                <div class="modal-footer">
+                    <button class="btn btn-danger" onclick="deleteTask()">删除</button>
+                    <button class="btn btn-secondary" onclick="editTask()">编辑</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 接送管理 - 车辆模态框 -->
+        <div class="modal-overlay" id="vehicleModal">
+            <div class="modal-content" style="max-width: 400px;">
+                <div class="modal-header">
+                    <h3 id="vehicleModalTitle">添加车辆</h3>
+                    <button class="modal-close" onclick="closeVehicleModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="vehicleId">
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <label>车牌号</label>
+                        <input type="text" id="vehiclePlate" class="form-input" placeholder="陕A12345" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
+                    </div>
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <label>车型</label>
+                        <input type="text" id="vehicleModel" class="form-input" placeholder="别克GL8" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
+                    </div>
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <label>座位数</label>
+                        <input type="number" id="vehicleSeats" class="form-input" placeholder="7" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
+                    </div>
+                    <div class="form-row" style="display:flex;gap:12px;">
+                        <div class="form-group" style="flex:1;margin-bottom:0;">
+                            <label>司机姓名</label>
+                            <input type="text" id="vehicleDriverName" class="form-input" placeholder="张师傅" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
+                        </div>
+                        <div class="form-group" style="flex:1;margin-bottom:0;">
+                            <label>司机电话</label>
+                            <input type="tel" id="vehicleDriverPhone" class="form-input" placeholder="13800138000" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeVehicleModal()">取消</button>
+                    <button class="btn btn-primary" onclick="saveVehicle()">保存</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 确认弹窗 -->
+        <div class="confirm-modal" id="confirmModal">
+            <div class="confirm-content">
+                <div class="confirm-message" id="confirmMessage"></div>
+                <div class="confirm-actions">
+                    <button class="confirm-btn cancel" id="confirmCancel">取消</button>
+                    <button class="confirm-btn ok" id="confirmOk">确定</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Toast 提示 -->
+        <div class="toast" id="toast"></div>
+    </div>
+    
+    <!-- JS 文件 -->
+    <script src="static/js/api.js"></script>
+    <script src="static/js/auth.js"></script>
+    <script src="static/js/app.js"></script>
+    <script src="static/js/dashboard.js"></script>
+    <script src="static/js/conference.js"></script>
+    <script src="static/js/participants.js"></script>
+    <script src="static/js/seating.js"></script>
+    <script src="static/js/hotel.js"></script>
+    <script src="static/js/restaurant.js"></script>
+    <script src="static/js/transport.js"></script>
+    <script src="static/js/profile.js"></script>
+</body>
+</html>

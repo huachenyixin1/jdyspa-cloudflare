@@ -1,0 +1,3758 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>会议管理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4a90d9 0%, #6fb1fc 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .header-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .header-code {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+
+        .tabs {
+            display: flex;
+            background: #e8e8e8;
+            padding: 8px 10px 0 10px;
+            gap: 0;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px 5px;
+            cursor: pointer;
+            background: #d0d0d0;
+            color: #666;
+            font-size: 14px;
+            border-radius: 8px 8px 0 0;
+            border: 1px solid #ccc;
+            border-bottom: none;
+            position: relative;
+            top: 1px;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            background: #c0c0c0;
+        }
+
+        .tab.active {
+            background: #fff;
+            color: #4a90d9;
+            font-weight: 600;
+            border-color: #4a90d9;
+            z-index: 1;
+        }
+
+        .content {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            padding: 20px;
+            min-height: 400px;
+        }
+
+        .tab-content {
+            display: none;
+            position: relative;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .seating-canvas {
+            position: relative;
+            min-height: 600px;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .seating-areas {
+            position: relative;
+            min-height: 500px;
+        }
+
+        .seating-area {
+            z-index: 1;
+            overflow: visible;
+        }
+
+        .seating-area:hover {
+            z-index: 10;
+        }
+
+        .area-content {
+            transform-origin: top left;
+            white-space: nowrap;
+        }
+
+        .search-bar {
+            margin-bottom: 15px;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .search-bar input:focus {
+            outline: none;
+            border-color: #4a90d9;
+        }
+
+        .action-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            background: #fff;
+            color: #333;
+        }
+
+        .btn:hover {
+            background: #f0f0f0;
+            border-color: #bbb;
+        }
+
+        .btn:disabled {
+            background: #f5f5f5;
+            color: #aaa;
+            border-color: #e0e0e0;
+            cursor: not-allowed;
+        }
+
+        .btn:disabled:hover {
+            background: #f5f5f5;
+            border-color: #e0e0e0;
+        }
+
+        .btn-primary:hover {
+            background: #e8f4fc;
+            border-color: #4a90d9;
+            color: #4a90d9;
+        }
+
+        .btn-success:hover {
+            background: #e8f8e8;
+            border-color: #5cb85c;
+            color: #5cb85c;
+        }
+
+        .btn-danger:hover {
+            background: #fce8e8;
+            border-color: #d9534f;
+            color: #d9534f;
+        }
+
+        .btn-warning:hover {
+            background: #fff8e8;
+            border-color: #f0ad4e;
+            color: #f0ad4e;
+        }
+
+        .btn-info:hover {
+            background: #e8f4fc;
+            border-color: #5bc0de;
+            color: #5bc0de;
+        }
+
+        .btn-secondary:hover {
+            background: #f5f5f5;
+            border-color: #999;
+            color: #666;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 10px 8px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .pagination button {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            background: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .pagination button:disabled {
+            background: #f5f5f5;
+            color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-size: 18px;
+            color: #333;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #4a90d9;
+        }
+
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .file-upload {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .file-upload:hover {
+            border-color: #4a90d9;
+        }
+
+        .file-upload input {
+            display: none;
+        }
+
+        .empty-tip {
+            text-align: center;
+            color: #999;
+            padding: 40px 0;
+        }
+
+        .placeholder-text {
+            text-align: center;
+            color: #999;
+            padding: 60px 0;
+            font-size: 16px;
+        }
+
+        .placeholder-icon {
+            text-align: center;
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .error-msg {
+            text-align: center;
+            color: #d9534f;
+            padding: 40px 0;
+            font-size: 16px;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.75);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 24px;
+            font-size: 14px;
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        .confirm-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+        }
+
+        .confirm-modal.active {
+            display: flex;
+        }
+
+        .confirm-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            width: 280px;
+            text-align: center;
+        }
+
+        .confirm-message {
+            font-size: 15px;
+            color: #333;
+            margin-bottom: 20px;
+            line-height: 1.5;
+            white-space: pre-line;
+        }
+
+        .confirm-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .confirm-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .confirm-btn.cancel {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .confirm-btn.ok {
+            background: #5c9ce6;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="tabs">
+            <div class="tab active" data-tab="participants">
+                <span class="tab-icon">👥</span><span>参会人</span>
+            </div>
+            <div class="tab" data-tab="seating">
+                <span class="tab-icon">🪑</span><span>排座</span>
+            </div>
+            <div class="tab" data-tab="hotel">
+                <span class="tab-icon">🏨</span><span>住宿</span>
+            </div>
+            <div class="tab" data-tab="restaurant">
+                <span class="tab-icon">🍽️</span><span>餐厅</span>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="tab-content active" id="content-participants">
+                <div class="search-bar">
+                    <input type="text" id="searchInput" placeholder="🔍 搜索姓名、公司、部门、职位、头衔..." onkeyup="searchParticipants()">
+                </div>
+
+                <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+                    <div>
+                        <h3 style="margin:0;">👥 参会人管理</h3>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" onclick="showAddModal()">➕ 添加</button>
+                        <button class="btn btn-primary" id="editBtn" onclick="editSelected()" disabled>✏️ 编辑</button>
+                        <button class="btn btn-danger" id="deleteBtn" onclick="deleteSelected()" disabled>🗑️ 删除 (<span id="selectedCount">0</span>)</button>
+                        <button class="btn btn-success" onclick="downloadTemplate()">📥 模板</button>
+                        <button class="btn btn-primary" onclick="showImportModal()">📤 导入</button>
+                        <button class="btn btn-warning" onclick="validateParticipants()">🔍 校验</button>
+                    </div>
+                </div>
+
+                <div class="participants-summary" id="participantsSummary" style="margin-bottom:15px;padding:10px;background:#f8f9fa;border-radius:6px;">
+                    <span>总人数: <strong id="totalParticipantCount">0</strong> 人</span> |
+                    <span>参会: <strong id="attendingCount">0</strong> 人</span> |
+                    <span>住宿: <strong id="hotelNeedCount">0</strong> 人</span> |
+                    <span>用餐: <strong id="mealNeedCount">0</strong> 人</span> |
+                    <span>接送: <strong id="transportNeedCount">0</strong> 人</span>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+                                <th>ID</th>
+                                <th>姓名</th>
+                                <th>电话</th>
+                                <th>公司</th>
+                                <th>部门</th>
+                                <th>职位</th>
+                                <th>头衔</th>
+                                <th>参会</th>
+                                <th>用餐</th>
+                                <th>住宿</th>
+                                <th>接送</th>
+                            </tr>
+                        </thead>
+                        <tbody id="participantsTable"></tbody>
+                    </table>
+                </div>
+
+                <div class="pagination">
+                    <button onclick="prevPage()" id="prevBtn">上一页</button>
+                    <span id="pageInfo">第 1 页，共 1 页</span>
+                    <button onclick="nextPage()" id="nextBtn">下一页</button>
+                </div>
+            </div>
+
+            <div class="tab-content" id="content-seating">
+                <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+                    <div>
+                        <h3 style="margin:0;">🪑 会场管理</h3>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" onclick="showAddAreaModal()">➕ 添加区域</button>
+                        <button class="btn btn-info" id="toggleSeatingDetailBtn" onclick="toggleSeatingDetail()">📋 显示详情</button>
+                        <button class="btn btn-warning" onclick="showAssignRulesModal()">📋 分配规则</button>
+                        <button class="btn btn-info" onclick="showPriorityModal()">⚙️ 设置优先级</button>
+                        <button class="btn btn-success" onclick="autoAssignSeats()">🎲 自动分配</button>
+                        <button class="btn btn-danger" onclick="clearAllSeats()">🗑️ 清空分配</button>
+                        <button class="btn btn-secondary" onclick="exportToPDF()">📄 导出PDF</button>
+                    </div>
+                </div>
+
+                <div class="seating-summary" id="seatingSummary" style="margin-bottom:15px;padding:10px;background:#f8f9fa;border-radius:6px;">
+                    <span>区域: <strong id="areaCount">0</strong> 个</span> |
+                    <span>座位: <strong id="seatCount">0</strong> 个</span> |
+                    <span>空余数: <strong id="seatingAvailableCount">0</strong> 个</span> |
+                    <span>参会人: <strong id="participantCount">0</strong> 人</span> |
+                    <span>已分配: <strong id="seatingAssignedCount">0</strong> 个</span> |
+                    <span>待分配: <strong id="seatingUnassignedCount" style="color:#e74c3c;">0</strong> 个</span>
+                </div>
+
+                <div class="seating-canvas" id="seatingCanvas">
+                    <div class="seating-areas" id="seatingAreas">
+                        <div class="empty-tip">暂无座位区域，请先添加</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="content-hotel">
+                <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+                    <div>
+                        <h3 style="margin:0;">🏨 住宿管理</h3>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" onclick="showHotelModal()">➕ 添加酒店</button>
+                        <button class="btn btn-info" id="toggleHotelDetailBtn" onclick="toggleHotelDetail()">📋 显示详情</button>
+                        <button class="btn btn-success" onclick="autoAssignRooms()">🎲 自动分配</button>
+                        <button class="btn btn-danger" onclick="clearAllRoomAssignments()">🗑️ 清空分配</button>
+                        <button class="btn btn-secondary" onclick="exportHotelPDF()">📄 导出PDF</button>
+                    </div>
+                </div>
+
+                <div class="hotel-summary" id="hotelSummary" style="margin-bottom:15px;padding:10px;background:#f8f9fa;border-radius:6px;display:none;">
+                    <span>酒店: <strong id="hotelCount">0</strong> 家</span> |
+                    <span>房间: <strong id="hotelRoomCount">0</strong> 个</span> |
+                    <span>总容量: <strong id="hotelTotalCapacity">0</strong> 人</span> |
+                    <span>空余数: <strong id="hotelAvailableCount">0</strong> 人</span> |
+                    <span>参会人: <strong id="hotelParticipantCount">0</strong> 人</span> |
+                    <span>已分配: <strong id="hotelAssignedCount">0</strong> 人</span> |
+                    <span>待分配: <strong id="hotelUnassignedCount" style="color:#e74c3c;">0</strong> 人</span>
+                </div>
+
+                <div id="hotelList"></div>
+
+                <div id="hotelModal" class="modal" style="display:none;position:fixed;z-index:1000;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);">
+                    <div style="background:#fff;margin:100px auto;padding:20px;border-radius:8px;width:400px;">
+                        <h3 id="hotelModalTitle" style="margin-top:0;">添加酒店</h3>
+                        <input type="hidden" id="editHotelId">
+                        <div class="form-group">
+                            <label>酒店名称 *</label>
+                            <input type="text" id="hotelName" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+                        </div>
+                        <div class="form-group">
+                            <label>位置</label>
+                            <input type="text" id="hotelLocation" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+                        </div>
+                        <div class="form-group">
+                            <label>联系人/电话</label>
+                            <input type="text" id="hotelContact" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+                        </div>
+                        <div class="form-group">
+                            <label>备注</label>
+                            <textarea id="hotelNote" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;rows:3;"></textarea>
+                        </div>
+                        <div style="text-align:right;margin-top:15px;">
+                            <button class="btn btn-secondary" onclick="closeHotelModal()">取消</button>
+                            <button class="btn btn-primary" onclick="saveHotel()">保存</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="roomModal" class="modal" style="display:none;position:fixed;z-index:1000;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);">
+                    <div style="background:#fff;margin:100px auto;padding:20px;border-radius:8px;width:500px;">
+                        <h3 id="roomModalTitle" style="margin-top:0;">批量添加房间</h3>
+                        <input type="hidden" id="roomHotelId">
+                        <div class="form-group">
+                            <label>房间配置</label>
+                            <div style="font-size:12px;color:#666;margin-bottom:5px;">
+                                支持格式：<br>
+                                • 每行一个房间号，如：101<br>
+                                • 范围格式，如：101~105 表示添加 101, 102, 103, 104, 105 共5个房间
+                            </div>
+                            <textarea id="roomNumbers" style="width:100%;height:200px;padding:8px;border:1px solid #ddd;border-radius:4px;font-family:monospace;font-size:14px;" placeholder="101&#10;102~105&#10;201"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>房间类型</label>
+                            <select id="roomType" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+                                <option value="single">单人间</option>
+                                <option value="double">双人间</option>
+                                <option value="suite">套房</option>
+                            </select>
+                        </div>
+                        <div style="text-align:right;margin-top:15px;">
+                            <button class="btn btn-secondary" onclick="closeRoomModal()">取消</button>
+                            <button class="btn btn-primary" onclick="saveRooms()">保存</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="content-restaurant">
+                <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+                    <div>
+                        <h3 style="margin:0;">🍽️ 餐厅管理</h3>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" onclick="showRestaurantModal()">➕ 添加餐厅</button>
+                        <button class="btn btn-info" id="toggleRestaurantDetailBtn" onclick="toggleRestaurantDetail()">📋 显示详情</button>
+                        <button class="btn btn-secondary" onclick="exportRestaurantPDF()">📄 导出PDF</button>
+                    </div>
+                </div>
+
+                <div class="restaurant-summary" id="restaurantSummary" style="margin-bottom:15px;padding:10px;background:#f8f9fa;border-radius:6px;display:none;">
+                    <span>餐厅: <strong id="restaurantCount">0</strong> 家</span> |
+                    <span>桌位: <strong id="restaurantTableCount">0</strong> 个</span> |
+                    <span>总容量: <strong id="restaurantTotalCapacity">0</strong> 人</span> |
+                    <span>空余数: <strong id="restaurantAvailableCount">0</strong> 人</span> |
+                    <span>参会人: <strong id="restaurantParticipantCount">0</strong> 人</span> |
+                    <span>已分配: <strong id="restaurantAssignedCount">0</strong> 人</span> |
+                    <span>待分配: <strong id="restaurantUnassignedCount" style="color:#e74c3c;">0</strong> 人</span>
+                </div>
+
+                <div id="restaurantList"></div>
+
+                <div id="restaurantModal" class="modal" style="display:none;position:fixed;z-index:1000;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);">
+                    <div style="background:#fff;margin:100px auto;padding:20px;border-radius:8px;width:400px;">
+                        <h3 id="restaurantModalTitle" style="margin-top:0;">添加餐厅</h3>
+                        <input type="hidden" id="editRestaurantId">
+                        <div class="form-group">
+                            <label>餐厅名称 *</label>
+                            <input type="text" id="restaurantName" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+                        </div>
+                        <div class="form-group">
+                            <label>地址</label>
+                            <input type="text" id="restaurantAddress" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+                        </div>
+                        <div class="form-group">
+                            <label>总容量（人）</label>
+                            <input type="number" id="restaurantCapacity" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label>备注</label>
+                            <textarea id="restaurantNote" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;rows:3;"></textarea>
+                        </div>
+                        <div style="text-align:right;margin-top:15px;">
+                            <button class="btn btn-secondary" onclick="closeRestaurantModal()">取消</button>
+                            <button class="btn btn-primary" onclick="saveRestaurant()">保存</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tableModal" class="modal" style="display:none;position:fixed;z-index:1000;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);">
+                    <div style="background:#fff;margin:100px auto;padding:20px;border-radius:8px;width:500px;">
+                        <h3 id="tableModalTitle" style="margin-top:0;">批量添加桌位</h3>
+                        <input type="hidden" id="tableRestaurantId">
+                        <div class="form-group">
+                            <label>桌位类型</label>
+                            <select id="tableType" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;" onchange="updateTableNamePrefix()">
+                                <option value="round">包间</option>
+                                <option value="long">长桌</option>
+                                <option value="hall">大厅</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>每个桌位座位数</label>
+                            <input type="number" id="tableCapacity" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;" value="10">
+                        </div>
+                        <div class="form-group">
+                            <label>数量</label>
+                            <input type="number" id="tableQuantity" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;" value="1" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label>名称前缀</label>
+                            <input type="text" id="tableNamePrefix" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;" value="圆桌" placeholder="如：圆桌、VIP包间">
+                        </div>
+                        <div style="text-align:right;margin-top:15px;">
+                            <button class="btn btn-secondary" onclick="closeTableModal()">取消</button>
+                            <button class="btn btn-primary" onclick="saveTables()">保存</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="restaurantAssignModal" class="modal" style="display:none;position:fixed;z-index:1000;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);">
+                    <div style="background:#fff;margin:100px auto;padding:20px;border-radius:8px;width:520px;max-height:80vh;overflow-y:auto;">
+                        <h3 id="assignModalTitle" style="margin-top:0;">分配参会人</h3>
+                        <input type="hidden" id="assignTableId">
+                        <input type="hidden" id="assignMealType" value="lunch">
+                        <div class="form-group">
+                            <label>选择参会人（可多选）</label>
+                            <div id="participantCheckboxes" style="max-height:300px;overflow-y:auto;border:1px solid #ddd;border-radius:4px;padding:10px;"></div>
+                        </div>
+                        <div style="text-align:right;margin-top:15px;">
+                            <button class="btn btn-secondary" onclick="closeRestaurantAssignModal()">取消</button>
+                            <button class="btn btn-primary" onclick="saveAssignment()">保存</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="addModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="addModalTitle">添加参会人</h3>
+                <button class="modal-close" onclick="closeAddModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editId">
+                <div class="form-group">
+                    <label>姓名 *</label>
+                    <input type="text" id="pName" placeholder="请输入姓名">
+                </div>
+                <div class="form-group">
+                    <label>电话</label>
+                    <input type="text" id="pPhone" placeholder="请输入电话">
+                </div>
+                <div class="form-group">
+                    <label>公司</label>
+                    <input type="text" id="pCompany" placeholder="请输入公司">
+                </div>
+                <div class="form-group">
+                    <label>部门</label>
+                    <input type="text" id="pDept" placeholder="请输入部门">
+                </div>
+                <div class="form-group">
+                    <label>职位</label>
+                    <input type="text" id="pTitle" placeholder="请输入职位">
+                </div>
+                <div class="form-group">
+                    <label>头衔</label>
+                    <input type="text" id="pRole" placeholder="请输入头衔">
+                </div>
+                <div class="form-group" style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                        <input type="checkbox" id="pAttending" checked> 是否参会
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                        <input type="checkbox" id="pMeal"> 是否用餐
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                        <input type="checkbox" id="pHotel"> 是否住宿
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                        <input type="checkbox" id="pTransport"> 是否接送
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="closeAddModal()">取消</button>
+                <button class="btn btn-success" onclick="saveParticipant()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="importModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>批量导入参会人</h3>
+                <button class="modal-close" onclick="closeImportModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom:15px;color:#666;">请上传Excel文件（支持 xls/xlsx 格式）</p>
+                <div class="file-upload" onclick="document.getElementById('importFile').click()">
+                    <input type="file" id="importFile" accept=".xls,.xlsx" onchange="showFileName()">
+                    <p id="fileName">点击选择文件</p>
+                </div>
+                <p style="margin-top:10px;font-size:12px;color:#999;">提示：Excel第一行为表头，列顺序为：姓名、电话、公司、部门、职位、头衔、是否参会、是否用餐、是否住宿、是否接送</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="closeImportModal()">取消</button>
+                <button class="btn btn-success" onclick="importParticipants()">导入</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="areaModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="areaModalTitle">添加区域</h3>
+                <button class="modal-close" onclick="closeAreaModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editAreaId">
+                <div class="form-group">
+                    <label>区域名称 *</label>
+                    <input type="text" id="areaName" placeholder="如：主席台、参会区">
+                </div>
+                <div class="form-group">
+                    <label>区域类型 *</label>
+                    <select id="areaType" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;" onchange="onAreaTypeChange(this.value)">
+                        <option value="rect">矩形（标准矩形桌）</option>
+                        <option value="hollow">回型（空心矩形/U型）</option>
+                        <option value="face">面对面（两排对面）</option>
+                    </select>
+                </div>
+                <div class="form-group" id="rectConfig">
+                    <label>每行座位数（用逗号分隔）</label>
+                    <input type="text" id="areaRows" placeholder="如：8,8,10,10" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:6px;">
+                    <p style="font-size:12px;color:#999;margin-top:5px;">示例：8,8,10,10 表示4排，每排分别是8、8、10、10个座位</p>
+                </div>
+                <div class="form-group" id="hollowConfig" style="display:none;">
+                    <label>回型布局（上下左右座位数）</label>
+                    <div style="display:flex;gap:10px;">
+                        <div style="flex:1;">
+                            <label style="font-size:12px;">上边</label>
+                            <input type="number" id="hollowTop" value="5" min="1" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+                        </div>
+                        <div style="flex:1;">
+                            <label style="font-size:12px;">下边</label>
+                            <input type="number" id="hollowBottom" value="5" min="1" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+                        </div>
+                        <div style="flex:1;">
+                            <label style="font-size:12px;">左边</label>
+                            <input type="number" id="hollowLeft" value="3" min="1" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+                        </div>
+                        <div style="flex:1;">
+                            <label style="font-size:12px;">右边</label>
+                            <input type="number" id="hollowRight" value="3" min="1" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group" id="faceConfig" style="display:none;">
+                    <label>每边座位数</label>
+                    <input type="number" id="faceSeats" value="8" min="1" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:6px;">
+                    <p style="font-size:12px;color:#999;margin-top:5px;">面对面区域两边各有相同数量的座位</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="closeAreaModal()">取消</button>
+                <button class="btn btn-success" onclick="saveArea()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="assignRulesModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>分配规则</h3>
+                <button class="modal-close" onclick="closeAssignRulesModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>排列方式</label>
+                    <select id="arrangeMode" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+                        <option value="middle">中间优先（先中间后两边）</option>
+                        <option value="left">从左到右</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>优先级字段选择（第1优先级权重最高）</label>
+                    <div style="display:flex;flex-direction:column;gap:8px;">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <span style="width:80px;">第1优先:</span>
+                            <select id="priority1" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:6px;">
+                                <option value="position">职位</option>
+                                <option value="company">公司</option>
+                                <option value="dept">部门</option>
+                            </select>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <span style="width:80px;">第2优先:</span>
+                            <select id="priority2" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:6px;">
+                                <option value="company">公司</option>
+                                <option value="position">职位</option>
+                                <option value="dept">部门</option>
+                            </select>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <span style="width:80px;">第3优先:</span>
+                            <select id="priority3" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:6px;">
+                                <option value="dept">部门</option>
+                                <option value="position">职位</option>
+                                <option value="company">公司</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="closeAssignRulesModal()">取消</button>
+                <button class="btn btn-success" onclick="saveAssignRules()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="priorityModal">
+        <div class="modal-content" style="max-width:600px;">
+            <div class="modal-header">
+                <h3>设置优先级</h3>
+                <button class="modal-close" onclick="closePriorityModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <button class="btn btn-sm" id="tabPosition" onclick="switchPriorityTab('position')" style="background:#007bff;color:white;">职位</button>
+                    <button class="btn btn-sm" id="tabCompany" onclick="switchPriorityTab('company')" style="background:#6c757d;color:white;">公司</button>
+                </div>
+                <div id="priorityTableContainer" style="max-height:400px;overflow-y:auto;">
+                    <table style="width:100%;border-collapse:collapse;">
+                        <thead style="position:sticky;top:0;background:#f8f9fa;">
+                            <tr>
+                                <th style="padding:10px;text-align:left;border-bottom:2px solid #dee2e6;width:50%;">名称</th>
+                                <th style="padding:10px;text-align:left;border-bottom:2px solid #dee2e6;width:50%;">优先级</th>
+                            </tr>
+                        </thead>
+                        <tbody id="priorityTableBody">
+                        </tbody>
+                    </table>
+                </div>
+                <div style="margin-top:10px;padding:10px;background:#f8f9fa;border-radius:6px;font-size:12px;color:#666;">
+                    <strong>支持粘贴：</strong>从Excel复制多行，格式"名称,优先级"，如：<br>
+                    院士,1<br>
+                    书记,2
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="closePriorityModal()">取消</button>
+                <button class="btn btn-success" onclick="savePriorityConfig()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const state = {
+            conferenceId: null,
+            activeTab: 'participants',
+            participants: [],
+            selectedIds: new Set(),
+            searchKeyword: '',
+            currentPage: 1,
+            pageSize: 10,
+            draggedParticipantId: null,
+            sourceSeatId: null,
+            resizingArea: null,
+            resizeStartX: 0,
+            resizeStartY: 0,
+            resizeStartScale: 1,
+            draggingArea: null,
+            dragStartX: 0,
+            dragStartY: 0,
+            dragStartAreaX: 0,
+            dragStartAreaY: 0,
+            debugMode: false,
+            validationResults: null,
+            showHotelDetail: false,
+            showSeatingDetail: false,
+            showRestaurantDetail: false
+        };
+
+        const TAB_MAP = {
+            'participants': '参会人',
+            'seating': '排座',
+            'hotel': '住宿',
+            'restaurant': '餐厅'
+        };
+
+        function getHeaders() {
+            const token = localStorage.getItem('token');
+            return {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            };
+        }
+
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.html';
+                return false;
+            }
+            return true;
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('token_type');
+            window.location.href = '/login.html';
+        }
+
+        function init() {
+            if (!checkAuth()) return;
+            
+            const params = new URLSearchParams(window.location.search);
+            state.conferenceId = params.get('conference_id') ? parseInt(params.get('conference_id')) : null;
+            state.activeTab = params.get('tab') || 'participants';
+
+            if (state.conferenceId) {
+                loadConference();
+            } else {
+                showConferenceSelect();
+            }
+
+            setupTabs();
+        }
+
+        async function showConferenceSelect() {
+            try {
+                const resp = await fetch('/api/conferences/', { headers: getHeaders() });
+                if (resp.status === 401) {
+                    logout();
+                    return;
+                }
+                const conferences = await resp.json();
+                
+                if (conferences.length === 0) {
+                    showError('暂无会议，请先创建会议');
+                    return;
+                }
+                
+                if (conferences.length === 1) {
+                    state.conferenceId = conferences[0].id;
+                    loadConference();
+                    return;
+                }
+                
+                let html = '<div style="padding:20px;"><h3>请选择会议</h3><ul style="list-style:none;padding:0;">';
+                conferences.forEach(c => {
+                    html += `<li style="margin:10px 0;"><button class="btn btn-primary" onclick="selectConference(${c.id})">${c.title} (${c.code})</button></li>`;
+                });
+                html += '</ul></div>';
+                document.querySelector('.content').innerHTML = html;
+                
+            } catch (e) {
+                showError('加载会议列表失败: ' + e.message);
+            }
+        }
+
+        function selectConference(id) {
+            state.conferenceId = id;
+            const url = new URL(window.location);
+            url.searchParams.set('conference_id', id);
+            history.replaceState(null, '', url);
+            loadConference();
+        }
+
+        async function loadConference() {
+            try {
+                const resp = await fetch(`/api/conferences/${state.conferenceId}`, { headers: getHeaders() });
+                if (resp.status === 401) {
+                    logout();
+                    return;
+                }
+                if (!resp.ok) throw new Error('加载失败');
+
+                const data = await resp.json();
+
+                loadParticipants();
+
+            } catch (e) {
+                showError('网络错误: ' + e.message);
+            }
+        }
+
+        function setupTabs() {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabName = tab.dataset.tab;
+                    switchTab(tabName);
+
+                    const url = new URL(window.location);
+                    url.searchParams.set('tab', tabName);
+                    history.replaceState(null, '', url);
+                });
+            });
+
+            switchTab(state.activeTab);
+        }
+
+        function switchTab(tabName) {
+            state.activeTab = tabName;
+
+            document.querySelectorAll('.tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.tab === tabName);
+            });
+
+            document.querySelectorAll('.tab-content').forEach(c => {
+                c.classList.toggle('active', c.id === `content-${tabName}`);
+            });
+
+            if (tabName === 'participants' && state.conferenceId) {
+                loadParticipants();
+            } else if (tabName === 'seating' && state.conferenceId) {
+                loadParticipants();
+                loadSeating();
+                setupSeatingDragListeners();
+            } else if (tabName === 'hotel' && state.conferenceId) {
+                loadHotel();
+            } else if (tabName === 'restaurant' && state.conferenceId) {
+                loadRestaurant();
+            }
+        }
+
+        function setupSeatingDragListeners() {
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+        }
+
+        async function loadParticipants() {
+            if (!state.conferenceId) return;
+
+            try {
+                const resp = await fetch(`/api/participants/${state.conferenceId}`, { headers: getHeaders() });
+                if (resp.status === 401) {
+                    logout();
+                    return;
+                }
+                if (!resp.ok) throw new Error('加载失败');
+
+                state.participants = await resp.json();
+                state.selectedIds.clear();
+                state.currentPage = 1;
+                state.validationResults = null;
+                renderParticipants();
+                updateButtons();
+                updateParticipantsSummary();
+
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function updateParticipantsSummary() {
+            const total = state.participants.length;
+            const attending = state.participants.filter(p => p.is_attending !== false).length;
+            const hotel = state.participants.filter(p => p.has_hotel === true).length;
+            const meal = state.participants.filter(p => p.has_meal === true).length;
+            const transport = state.participants.filter(p => p.has_transport === true).length;
+            
+            document.getElementById('totalParticipantCount').textContent = total;
+            document.getElementById('attendingCount').textContent = attending;
+            document.getElementById('hotelNeedCount').textContent = hotel;
+            document.getElementById('mealNeedCount').textContent = meal;
+            document.getElementById('transportNeedCount').textContent = transport;
+        }
+
+        function renderParticipants() {
+            const filtered = state.participants.filter(p => {
+                if (!state.searchKeyword) return true;
+                const kw = state.searchKeyword.toLowerCase();
+                return (p.name && p.name.toLowerCase().includes(kw)) ||
+                       (p.company && p.company.toLowerCase().includes(kw)) ||
+                       (p.department && p.department.toLowerCase().includes(kw)) ||
+                       (p.position && p.position.toLowerCase().includes(kw)) ||
+                       (p.title && p.title.toLowerCase().includes(kw)) ||
+                       (p.phone && p.phone.includes(kw));
+            });
+
+            const totalPages = Math.max(1, Math.ceil(filtered.length / state.pageSize));
+            if (state.currentPage > totalPages) state.currentPage = totalPages;
+
+            const start = (state.currentPage - 1) * state.pageSize;
+            const end = start + state.pageSize;
+            const pageData = filtered.slice(start, end);
+
+            function getStatusCell(value, isValid, participantId) {
+                if (!state.validationResults) {
+                    return `<td>${value ? '✓' : '✗'}</td>`;
+                }
+                const validation = state.validationResults.find(v => v.id === participantId);
+                if (validation && value && !isValid) {
+                    return `<td><span style="display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;border:2px solid #e74c3c;border-radius:3px;color:#e74c3c;font-weight:bold;">✓</span></td>`;
+                }
+                return `<td>${value ? '✓' : '✗'}</td>`;
+            }
+
+            const tbody = document.getElementById('participantsTable');
+            if (pageData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="12" class="empty-tip">暂无数据</td></tr>`;
+            } else {
+                tbody.innerHTML = pageData.map((p, i) => {
+                    const validation = state.validationResults ? state.validationResults.find(v => v.id === p.id) : null;
+                    return `
+                    <tr>
+                        <td><input type="checkbox" value="${p.id}"
+                            ${state.selectedIds.has(p.id) ? 'checked' : ''}
+                            onchange="toggleSelect(${p.id})"></td>
+                        <td>${p.id}</td>
+                        <td>${escapeHtml(p.name || '')}</td>
+                        <td>${escapeHtml(p.phone || '')}</td>
+                        <td>${escapeHtml(p.company || '')}</td>
+                        <td>${escapeHtml(p.department || '')}</td>
+                        <td>${escapeHtml(p.position || '')}</td>
+                        <td>${escapeHtml(p.title || '')}</td>
+                        ${getStatusCell(p.is_attending !== false, validation ? validation.attending_valid : true, p.id)}
+                        ${getStatusCell(p.has_meal === true, validation ? validation.meal_valid : true, p.id)}
+                        ${getStatusCell(p.has_hotel === true, validation ? validation.hotel_valid : true, p.id)}
+                        ${getStatusCell(p.has_transport === true, validation ? validation.transport_valid : true, p.id)}
+                    </tr>
+                `}).join('');
+            }
+
+            document.getElementById('pageInfo').textContent =
+                `第 ${state.currentPage} 页，共 ${totalPages} 页`;
+            document.getElementById('prevBtn').disabled = state.currentPage <= 1;
+            document.getElementById('nextBtn').disabled = state.currentPage >= totalPages;
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function toggleSelect(id) {
+            if (state.selectedIds.has(id)) {
+                state.selectedIds.delete(id);
+            } else {
+                state.selectedIds.add(id);
+            }
+            updateButtons();
+        }
+
+        function toggleSelectAll() {
+            const checked = document.getElementById('selectAll').checked;
+            if (checked) {
+                state.participants.forEach(p => state.selectedIds.add(p.id));
+            } else {
+                state.selectedIds.clear();
+            }
+            renderParticipants();
+            updateButtons();
+        }
+
+        function updateButtons() {
+            const count = state.selectedIds.size;
+            document.getElementById('selectedCount').textContent = count;
+            document.getElementById('deleteBtn').disabled = count === 0;
+            document.getElementById('editBtn').disabled = count !== 1;
+        }
+
+        function searchParticipants() {
+            state.searchKeyword = document.getElementById('searchInput').value;
+            state.currentPage = 1;
+            renderParticipants();
+        }
+
+        function prevPage() {
+            if (state.currentPage > 1) {
+                state.currentPage--;
+                renderParticipants();
+            }
+        }
+
+        function nextPage() {
+            const totalPages = Math.ceil(state.participants.length / state.pageSize);
+            if (state.currentPage < totalPages) {
+                state.currentPage++;
+                renderParticipants();
+            }
+        }
+
+        function showAddModal() {
+            document.getElementById('addModalTitle').textContent = '添加参会人';
+            document.getElementById('editId').value = '';
+            document.getElementById('pName').value = '';
+            document.getElementById('pPhone').value = '';
+            document.getElementById('pCompany').value = '';
+            document.getElementById('pDept').value = '';
+            document.getElementById('pTitle').value = '';
+            document.getElementById('pRole').value = '';
+            document.getElementById('pAttending').checked = true;
+            document.getElementById('pMeal').checked = false;
+            document.getElementById('pHotel').checked = false;
+            document.getElementById('pTransport').checked = false;
+            document.getElementById('addModal').classList.add('active');
+        }
+
+        function closeAddModal() {
+            document.getElementById('addModal').classList.remove('active');
+        }
+
+        async function saveParticipant() {
+            const name = document.getElementById('pName').value.trim();
+            if (!name) {
+                alert('请输入姓名');
+                return;
+            }
+
+            const editId = document.getElementById('editId').value;
+            const data = {
+                conference_id: state.conferenceId,
+                name: name,
+                phone: document.getElementById('pPhone').value.trim(),
+                company: document.getElementById('pCompany').value.trim(),
+                department: document.getElementById('pDept').value.trim(),
+                position: document.getElementById('pTitle').value.trim(),
+                title: document.getElementById('pRole').value.trim(),
+                is_attending: document.getElementById('pAttending').checked,
+                has_meal: document.getElementById('pMeal').checked,
+                has_hotel: document.getElementById('pHotel').checked,
+                has_transport: document.getElementById('pTransport').checked
+            };
+
+            try {
+                let resp;
+                if (editId) {
+                    resp = await fetch(`/api/participants/${editId}`, {
+                        method: 'PUT',
+                        headers: {...getHeaders(), 'Content-Type': 'application/json'},
+                        body: JSON.stringify(data)
+                    });
+                } else {
+                    resp = await fetch('/api/participants/', {
+                        method: 'POST',
+                        headers: {...getHeaders(), 'Content-Type': 'application/json'},
+                        body: JSON.stringify(data)
+                    });
+                }
+
+                if (!resp.ok) throw new Error('保存失败');
+
+                closeAddModal();
+                loadParticipants();
+
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        function editSelected() {
+            if (state.selectedIds.size !== 1) return;
+            const id = [...state.selectedIds][0];
+            editParticipant(id);
+        }
+
+        function editParticipant(id) {
+            const p = state.participants.find(x => x.id === id);
+            if (!p) return;
+
+            document.getElementById('addModalTitle').textContent = '编辑参会人';
+            document.getElementById('editId').value = id;
+            document.getElementById('pName').value = p.name || '';
+            document.getElementById('pPhone').value = p.phone || '';
+            document.getElementById('pCompany').value = p.company || '';
+            document.getElementById('pDept').value = p.department || '';
+            document.getElementById('pTitle').value = p.position || '';
+            document.getElementById('pRole').value = p.title || '';
+            document.getElementById('pAttending').checked = p.is_attending !== false;
+            document.getElementById('pMeal').checked = p.has_meal === true;
+            document.getElementById('pHotel').checked = p.has_hotel === true;
+            document.getElementById('pTransport').checked = p.has_transport === true;
+            document.getElementById('addModal').classList.add('active');
+        }
+
+        async function deleteSelected() {
+            if (state.selectedIds.size === 0) return;
+            const confirmed = await showConfirm(`确定要删除选中的 ${state.selectedIds.size} 位参会人吗？`);
+            if (!confirmed) return;
+
+            try {
+                const resp = await fetch('/api/participants/batch', {
+                    method: 'DELETE',
+                    headers: {...getHeaders(), 'Content-Type': 'application/json'},
+                    body: JSON.stringify({ids: Array.from(state.selectedIds)})
+                });
+
+                if (!resp.ok) throw new Error('删除失败');
+
+                loadParticipants();
+
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        function showImportModal() {
+            document.getElementById('importFile').value = '';
+            document.getElementById('fileName').textContent = '点击选择文件';
+            document.getElementById('importModal').classList.add('active');
+        }
+
+        function closeImportModal() {
+            document.getElementById('importModal').classList.remove('active');
+        }
+
+        function showFileName() {
+            const file = document.getElementById('importFile').files[0];
+            if (file) {
+                document.getElementById('fileName').textContent = file.name;
+            }
+        }
+
+        async function importParticipants() {
+            const fileInput = document.getElementById('importFile');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('请选择文件');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const token = localStorage.getItem('token');
+            try {
+                const resp = await fetch(`/api/participants/import?conference_id=${state.conferenceId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    throw new Error(err.detail || '导入失败');
+                }
+
+                const result = await resp.json();
+                alert(`成功导入 ${result.imported} 条数据`);
+                closeImportModal();
+                loadParticipants();
+
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        async function validateParticipants() {
+            if (!state.conferenceId) {
+                alert('请先选择会议');
+                return;
+            }
+            try {
+                const resp = await fetch(`/api/participants/${state.conferenceId}/validate`, { headers: getHeaders() });
+                if (!resp.ok) throw new Error('校验失败');
+                state.validationResults = await resp.json();
+                
+                let invalidCount = 0;
+                state.validationResults.forEach(v => {
+                    if (!v.attending_valid || !v.meal_valid || !v.hotel_valid || !v.transport_valid) {
+                        invalidCount++;
+                    }
+                });
+                
+                if (invalidCount > 0) {
+                    alert(`校验完成，发现 ${invalidCount} 位参会人存在未安排的项目（已标红显示）`);
+                } else {
+                    alert('校验通过，所有参会人的安排都已就绪');
+                }
+                
+                renderParticipants();
+            } catch (e) {
+                alert('校验失败: ' + e.message);
+            }
+        }
+
+        function downloadTemplate() {
+            window.location.href = '/api/participants/template/download';
+        }
+
+        function showError(msg) {
+            document.querySelectorAll('.tab-content').forEach(c => {
+                c.innerHTML = `<div class="error-msg">${msg}</div>`;
+                c.classList.add('active');
+            });
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        }
+
+        async function loadSeating() {
+            if (!state.conferenceId) return;
+            try {
+                if (!state.participants || state.participants.length === 0) {
+                    const partResp = await fetch(`/api/participants/${state.conferenceId}`, { headers: getHeaders() });
+                    if (partResp.ok) {
+                        state.participants = await partResp.json();
+                    }
+                }
+                
+                const resp = await fetch(`/api/seating/${state.conferenceId}/assignments`, { headers: getHeaders() });
+                if (!resp.ok) throw new Error('加载失败');
+                const data = await resp.json();
+                window._seatingAssignments = data.assignments || [];
+                if (state.debugMode) console.log('座位数据:', JSON.stringify(data, null, 2));
+                renderSeatingAreas(data);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function renderSeatHtml(seat, area, assignedMap, seatWidth, seatHeight, fontSize, subFontSize, seatDisplayNum) {
+            const key = `${area.id}-${seat.seat_number}`;
+            const assignment = assignedMap[key];
+            const seatId = `${area.id}-${seat.seat_number}`;
+            const displayNum = seatDisplayNum || seat.seat_number;
+
+            if (assignment) {
+                const showDetail = state.showSeatingDetail;
+                const participant = (state.participants || []).find(p => p.id === assignment.participant_id);
+                const company = participant ? (participant.company || '') : '';
+                const position = participant ? (participant.position || '') : '';
+                
+                if (showDetail) {
+                    const detailWidth = Math.max(seatWidth, 100);
+                    const detailHeight = Math.max(seatHeight, 70);
+                    return `<div class="seat occupied" data-seat-id="${seatId}" data-assignment-id="${assignment.id}" data-participant-id="${assignment.participant_id}" draggable="true" ondragstart="handleSeatDragStart(event)" ondragend="this.style.opacity='1'" ondragover="handleSeatDragOver(event)" ondrop="handleSeatDrop(event)" onclick="unassignSeat(${assignment.id})" style="width:${detailWidth}px;height:auto;min-height:${detailHeight}px;background:#4a90d9;color:#fff;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:grab;flex-shrink:0;padding:4px;" title="${escapeHtml(assignment.participant_name)}">
+                        <span style="font-size:${fontSize}px;font-weight:500;">${escapeHtml(assignment.participant_name || '')}</span>
+                        ${company ? `<span style="font-size:10px;opacity:0.9;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(company)}</span>` : ''}
+                        ${position ? `<span style="font-size:10px;opacity:0.8;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(position)}</span>` : ''}
+                        <span style="font-size:${subFontSize}px;opacity:0.7;">${displayNum}</span>
+                    </div>`;
+                } else {
+                    return `<div class="seat occupied" data-seat-id="${seatId}" data-assignment-id="${assignment.id}" data-participant-id="${assignment.participant_id}" draggable="true" ondragstart="handleSeatDragStart(event)" ondragend="this.style.opacity='1'" ondragover="handleSeatDragOver(event)" ondrop="handleSeatDrop(event)" onclick="unassignSeat(${assignment.id})" style="width:${seatWidth}px;height:${seatHeight}px;background:#4a90d9;color:#fff;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:grab;flex-shrink:0;" title="${escapeHtml(assignment.participant_name)}">
+                        <span style="font-size:${fontSize}px;font-weight:500;">${escapeHtml(assignment.participant_name || '')}</span>
+                        <span style="font-size:${subFontSize}px;opacity:0.8;">${displayNum}</span>
+                    </div>`;
+                }
+            } else {
+                return `<div class="seat empty" data-seat-id="${seatId}" data-area-id="${area.id}" data-seat-number="${seat.seat_number}" ondragover="handleSeatDragOver(event)" ondrop="handleSeatDrop(event)" onclick="showAssignModal(${area.id}, '${seat.seat_number}')" style="width:${seatWidth}px;height:${seatHeight}px;background:#e8e8e8;color:#999;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
+                    <span style="font-size:${fontSize}px;">空座</span>
+                    <span style="font-size:${subFontSize}px;">${displayNum}</span>
+                </div>`;
+            }
+        }
+
+        function renderSeatingAreas(data) {
+            const areas = data.area_seats || {};
+            const assignments = data.assignments || [];
+            const assignedMap = {};
+            assignments.forEach(a => {
+                const key = `${a.area_id}-${a.seat_number}`;
+                assignedMap[key] = a;
+            });
+
+            let totalSeats = 0;
+
+            let html = '';
+            for (const [areaId, areaData] of Object.entries(areas)) {
+                const area = areaData.area;
+                const seats = areaData.seats || [];
+                if (state.debugMode) console.log(`区域 ${area.name} (${area.area_type}):`, { config: area.config, seatsCount: seats.length, seats });
+                totalSeats += seats.length;
+                const scale = area.scale || 1;
+                const posX = area.position_x || 0;
+                const posY = area.position_y || 0;
+
+                const rows_config = area.config?.rows || '';
+                let rowCounts = [];
+                if (typeof rows_config === 'string' && rows_config) {
+                    const normalizedConfig = rows_config.replace(/，/g, ',');
+                    rowCounts = normalizedConfig.split(',').map(x => parseInt(x.trim())).filter(x => x > 0);
+                } else if (Array.isArray(rows_config)) {
+                    rowCounts = rows_config;
+                }
+                if (rowCounts.length === 0) {
+                    rowCounts = [10];
+                }
+
+                const baseSeatWidth = 70;
+                const baseSeatHeight = 50;
+                const baseGap = 6;
+                const seatWidth = Math.round(baseSeatWidth * scale);
+                const seatHeight = Math.round(baseSeatHeight * scale);
+                const gap = Math.round(baseGap * scale);
+                const fontSize = Math.round(11 * scale);
+                const subFontSize = Math.round(9 * scale);
+
+                const areaType = area.area_type || 'rect';
+                let seatHtml = '';
+                if (state.debugMode) console.log(`区域 ${area.name} 类型=${areaType}, seats数量=${seats.length}`);
+
+                if (areaType === 'hollow') {
+                    const top = area.config?.top || 5;
+                    const bottom = area.config?.bottom || 5;
+                    const left = area.config?.left || 3;
+                    const right = area.config?.right || 3;
+
+                    const seatSize = Math.min(seatWidth, seatHeight);
+                    const totalWidth = Math.max(top, bottom) * (seatSize + gap);
+
+                    const tableWidth = top * (seatSize + gap) - seatSize;
+                    const tableHeight = Math.max(left, right) * (seatSize + gap) - seatSize;
+
+                    const topSeats = seats.filter(s => s.seat_number.startsWith('T'));
+                    const bottomSeats = seats.filter(s => s.seat_number.startsWith('B'));
+                    const leftSeats = seats.filter(s => s.seat_number.startsWith('L'));
+                    const rightSeats = seats.filter(s => s.seat_number.startsWith('R'));
+
+                    seatHtml = `<div class="hollow-layout" style="display:flex;flex-direction:column;align-items:center;gap:${gap}px;padding:10px;min-width:${totalWidth + gap * 2}px;">
+                        <div class="hollow-top" style="display:flex;gap:${gap}px;justify-content:center;width:100%;">
+                            ${topSeats.map((seat, i) => renderSeatHtml(seat, area, assignedMap, seatWidth, seatHeight, fontSize, subFontSize, seat.seat_number)).join('')}
+                        </div>
+                        <div class="hollow-middle" style="display:flex;gap:${gap}px;align-items:center;justify-content:center;width:100%;">
+                            <div class="hollow-left" style="display:flex;flex-direction:column;gap:${gap}px;align-items:flex-end;">
+                                ${leftSeats.map((seat, i) => renderSeatHtml(seat, area, assignedMap, seatWidth, seatHeight, fontSize, subFontSize, seat.seat_number)).join('')}
+                            </div>
+                            <div class="hollow-table" style="width:${tableWidth}px;height:${tableHeight}px;background:#f5f5f5;border:3px solid #999;border-radius:8px;flex-shrink:0;"></div>
+                            <div class="hollow-right" style="display:flex;flex-direction:column;gap:${gap}px;align-items:flex-start;">
+                                ${rightSeats.map((seat, i) => renderSeatHtml(seat, area, assignedMap, seatWidth, seatHeight, fontSize, subFontSize, seat.seat_number)).join('')}
+                            </div>
+                        </div>
+                        <div class="hollow-bottom" style="display:flex;gap:${gap}px;justify-content:center;width:100%;">
+                            ${bottomSeats.map((seat, i) => renderSeatHtml(seat, area, assignedMap, seatWidth, seatHeight, fontSize, subFontSize, seat.seat_number)).join('')}
+                        </div>
+                    </div>`;
+                } else if (areaType === 'face') {
+                    const leftSeats = seats.filter(s => s.seat_number.startsWith('L'));
+                    const rightSeats = seats.filter(s => s.seat_number.startsWith('R'));
+                    if (state.debugMode) console.log(`Face区域渲染: leftSeats=${leftSeats.length}, rightSeats=${rightSeats.length}`);
+                    seatHtml = `<div class="face-layout" style="display:flex;gap:${gap * 4}px;justify-content:center;padding:10px;min-width:400px;">
+                        <div class="face-left" style="display:flex;flex-direction:column;gap:${gap}px;">
+                            ${leftSeats.map((seat, i) => renderSeatHtml(seat, area, assignedMap, seatWidth, seatHeight, fontSize, subFontSize, 'L' + (i+1))).join('')}
+                        </div>
+                        <div class="face-table" style="width:120px;height:${seatHeight * leftSeats.length + gap * 2}px;background:#f5f5f5;border:3px solid #999;border-radius:30px;flex-shrink:0;"></div>
+                        <div class="face-right" style="display:flex;flex-direction:column;gap:${gap}px;">
+                            ${rightSeats.map((seat, i) => renderSeatHtml(seat, area, assignedMap, seatWidth, seatHeight, fontSize, subFontSize, 'R' + (i+1))).join('')}
+                        </div>
+                    </div>`;
+                } else {
+                    const maxRowCount = Math.max(...rowCounts);
+                    const totalRows = rowCounts.length;
+                    seatHtml = `<div class="seats-container" style="padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px;">`;
+                    let seatIdx = 0;
+                    rowCounts.forEach((count, rowIdx) => {
+                        seatHtml += `<div class="seat-row" style="display:flex;gap:${gap}px;justify-content:center;width:100%;">`;
+                        for (let col = 0; col < count; col++) {
+                            const seat = seats[seatIdx++];
+                            if (!seat) continue;
+                            seatHtml += renderSeatHtml(seat, area, assignedMap, seatWidth, seatHeight, fontSize, subFontSize);
+                        }
+                        seatHtml += `</div>`;
+                    });
+                    seatHtml += `</div>`;
+                }
+
+                html += `<div class="seating-area" data-area-id="${area.id}" data-scale="${scale}" style="position:absolute;left:${posX}px;top:${posY}px;border:1px solid #ddd;border-radius:8px;background:#fff;transform-origin:top left;">
+                    <div class="area-content">
+                        <div class="area-header" style="background:#f8f9fa;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;cursor:move;" onmousedown="startDragArea(event, ${area.id})">
+                            <div>
+                                <strong style="font-size:13px;">${escapeHtml(area.name)}</strong>
+                                <span style="color:#666;margin-left:6px;font-size:11px;">${seats.length}个座位</span>
+                            </div>
+                            <div class="no-export">
+                                <button class="btn btn-primary" style="padding:4px 8px;font-size:11px;margin-right:4px;" onclick="event.stopPropagation();editArea(${area.id}, '${escapeHtml(area.name).replace(/'/g, "\\'")}', '${area.area_type}', '${encodeURIComponent(JSON.stringify(area.config || {}))}')">✏️ 编辑</button>
+                                <button class="btn btn-danger" style="padding:4px 8px;font-size:11px;" onclick="event.stopPropagation();deleteArea(${area.id})">🗑️ 删除</button>
+                            </div>
+                        </div>
+                        ${seatHtml}
+                    </div>
+                    <div class="resize-handle" style="position:absolute;right:0;bottom:0;width:18px;height:18px;cursor:nwse-resize;background:linear-gradient(135deg,transparent 50%,#ccc 50%);" onmousedown="startResizeArea(event, ${area.id})"></div>
+                </div>`;
+            }
+
+            if (Object.keys(areas).length === 0) {
+                html = '<div class="empty-tip">暂无座位区域，请先添加</div>';
+            }
+
+            document.getElementById('seatingAreas').innerHTML = html;
+            const areaCount = Object.keys(areas).length;
+            const assignedCnt = assignments.length;
+            const availableSeats = totalSeats - assignedCnt;
+            const attendingParticipants = (state.participants || []).filter(p => p.is_attending !== false).length;
+            const unassignedSeats = attendingParticipants - assignedCnt;
+            document.getElementById('areaCount').textContent = areaCount;
+            document.getElementById('seatCount').textContent = totalSeats;
+            document.getElementById('seatingAvailableCount').textContent = availableSeats;
+            document.getElementById('participantCount').textContent = attendingParticipants;
+            document.getElementById('seatingAssignedCount').textContent = assignedCnt;
+            document.getElementById('seatingUnassignedCount').textContent = unassignedSeats > 0 ? unassignedSeats : 0;
+            
+            adjustSeatingCanvasHeight();
+        }
+
+        function adjustSeatingCanvasHeight() {
+            const container = document.getElementById('seatingAreas');
+            const canvas = document.getElementById('seatingCanvas');
+            const areas = container.querySelectorAll('.seating-area');
+            if (areas.length === 0) return;
+
+            let maxBottom = 0;
+            areas.forEach(area => {
+                const rect = area.getBoundingClientRect();
+                if (rect.bottom > maxBottom) maxBottom = rect.bottom;
+            });
+
+            const containerRect = container.getBoundingClientRect();
+            const canvasRect = canvas.getBoundingClientRect();
+            const requiredHeight = maxBottom - canvasRect.top + 40;
+
+            if (canvasRect.height < requiredHeight) {
+                canvas.style.height = requiredHeight + 'px';
+            }
+        }
+
+        function handleSeatDragStart(e) {
+            const seat = e.target.closest('.seat');
+            if (!seat) return;
+            state.draggedParticipantId = seat.dataset.participantId;
+            state.sourceSeatId = seat.dataset.seatId;
+            state.draggedFromAssignmentId = seat.dataset.assignmentId;
+            e.dataTransfer.effectAllowed = 'move';
+            e.target.style.opacity = '0.5';
+        }
+
+        function handleSeatDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        }
+
+        async function handleSeatDrop(e) {
+            e.preventDefault();
+            const targetSeat = e.target.closest('.seat');
+            if (!targetSeat) return;
+
+            const targetSeatId = targetSeat.dataset.seatId;
+
+            if (!state.draggedParticipantId || !state.sourceSeatId) return;
+
+            if (state.sourceSeatId === targetSeatId) return;
+
+            const sourceParts = state.sourceSeatId.split('-');
+            const targetParts = targetSeatId.split('-');
+            const sourceAreaId = parseInt(sourceParts[0]);
+            const targetAreaId = parseInt(targetParts[0]);
+            const sourceSeatNum = sourceParts.slice(1).join('-');
+            const targetSeatNum = targetParts.slice(1).join('-');
+
+            const assignments = window._seatingAssignments || [];
+            const sourceAssign = assignments.find(a => 
+                a.area_id === sourceAreaId && a.seat_number === sourceSeatNum
+            );
+            const targetAssign = assignments.find(a => 
+                a.area_id === targetAreaId && a.seat_number === targetSeatNum
+            );
+
+            try {
+                if (sourceAssign && targetAssign) {
+                    const resp = await fetch('/api/seating/swap', {
+                        method: 'POST',
+                        headers: {...getHeaders(), 'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            assignment_id_1: sourceAssign.id,
+                            assignment_id_2: targetAssign.id
+                        })
+                    });
+                    if (!resp.ok) throw new Error('交换失败');
+                } else if (sourceAssign && !targetAssign) {
+                    await fetch(`/api/seating/assignments/${sourceAssign.id}`, { 
+                        method: 'DELETE',
+                        headers: getHeaders()
+                    });
+                    const resp = await fetch(`/api/seating/${state.conferenceId}/assignments`, {
+                        method: 'POST',
+                        headers: {...getHeaders(), 'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            area_id: targetAreaId,
+                            seat_number: targetSeatNum,
+                            participant_id: parseInt(state.draggedParticipantId)
+                        })
+                    });
+                    if (!resp.ok) {
+                        const errData = await resp.json();
+                        throw new Error(errData.detail || '分配失败');
+                    }
+                }
+                loadSeating();
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        function startResizeArea(e, areaId) {
+            e.preventDefault();
+            e.stopPropagation();
+            const el = document.querySelector(`[data-area-id="${areaId}"]`);
+            if (!el) return;
+            state.resizingArea = el;
+            state.resizeStartX = e.clientX;
+            state.resizeStartY = e.clientY;
+            state.resizeStartScale = parseFloat(el.dataset.scale) || 1;
+        }
+
+        function startDragArea(e, areaId) {
+            if (e.target.closest('button')) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const el = document.querySelector(`[data-area-id="${areaId}"]`);
+            if (!el) return;
+            state.draggingArea = el;
+            state.dragStartX = e.clientX;
+            state.dragStartY = e.clientY;
+            const currentLeft = parseInt(el.style.left) || 0;
+            const currentTop = parseInt(el.style.top) || 0;
+            state.dragStartAreaX = currentLeft;
+            state.dragStartAreaY = currentTop;
+        }
+
+        function handleMouseMove(e) {
+            if (state.resizingArea) {
+                const delta = Math.min(e.clientX - state.resizeStartX, e.clientY - state.resizeStartY);
+                const scaleChange = delta / 500;
+                let newScale = state.resizeStartScale + scaleChange;
+                newScale = Math.max(0.5, Math.min(2, newScale));
+                state.resizingArea.dataset.scale = newScale;
+                state.resizingArea.style.transform = `scale(${newScale})`;
+            } else if (state.draggingArea) {
+                const deltaX = e.clientX - state.dragStartX;
+                const deltaY = e.clientY - state.dragStartY;
+                state.draggingArea.style.left = (state.dragStartAreaX + deltaX) + 'px';
+                state.draggingArea.style.top = (state.dragStartAreaY + deltaY) + 'px';
+            }
+        }
+
+        async function handleMouseUp(e) {
+            if (state.resizingArea) {
+                const areaId = state.resizingArea.dataset.areaId;
+                const scale = parseFloat(state.resizingArea.dataset.scale) || 1;
+                const x = parseInt(state.resizingArea.style.left) || 0;
+                const y = parseInt(state.resizingArea.style.top) || 0;
+                try {
+                    await fetch(`/api/seating/areas/${areaId}`, {
+                        method: 'PUT',
+                        headers: {...getHeaders(), 'Content-Type': 'application/json'},
+                        body: JSON.stringify({position_x: x, position_y: y, scale: scale})
+                    });
+                } catch (err) {
+                    console.error(err);
+                }
+                state.resizingArea = null;
+            } else if (state.draggingArea) {
+                const areaId = state.draggingArea.dataset.areaId;
+                const scale = parseFloat(state.draggingArea.dataset.scale) || 1;
+                const x = parseInt(state.draggingArea.style.left) || 0;
+                const y = parseInt(state.draggingArea.style.top) || 0;
+                try {
+                    await fetch(`/api/seating/areas/${areaId}`, {
+                        method: 'PUT',
+                        headers: {...getHeaders(), 'Content-Type': 'application/json'},
+                        body: JSON.stringify({position_x: x, position_y: y, scale: scale})
+                    });
+                } catch (err) {
+                    console.error(err);
+                }
+                state.draggingArea = null;
+            }
+        }
+
+        function showAddAreaModal() {
+            document.getElementById('areaModalTitle').textContent = '添加区域';
+            document.getElementById('editAreaId').value = '';
+            document.getElementById('areaName').value = '';
+            document.getElementById('areaType').value = 'rect';
+            document.getElementById('areaRows').value = '';
+            document.getElementById('hollowTop').value = 5;
+            document.getElementById('hollowBottom').value = 5;
+            document.getElementById('hollowLeft').value = 3;
+            document.getElementById('hollowRight').value = 3;
+            document.getElementById('faceSeats').value = 8;
+            onAreaTypeChange('rect');
+            document.getElementById('areaModal').classList.add('active');
+        }
+
+        function onAreaTypeChange(type) {
+            document.getElementById('rectConfig').style.display = type === 'rect' ? 'block' : 'none';
+            document.getElementById('hollowConfig').style.display = type === 'hollow' ? 'block' : 'none';
+            document.getElementById('faceConfig').style.display = type === 'face' ? 'block' : 'none';
+        }
+
+        function closeAreaModal() {
+            document.getElementById('areaModal').classList.remove('active');
+        }
+
+        function editArea(id, name, type, config) {
+            document.getElementById('areaModalTitle').textContent = '编辑区域';
+            document.getElementById('editAreaId').value = id;
+            document.getElementById('areaName').value = name;
+            document.getElementById('areaType').value = type;
+
+            let configObj;
+            if (typeof config === 'string') {
+                try {
+                    configObj = JSON.parse(decodeURIComponent(config));
+                } catch (e) {
+                    configObj = {};
+                }
+            } else {
+                configObj = config || {};
+            }
+
+            if (type === 'hollow') {
+                document.getElementById('hollowTop').value = configObj.top || 5;
+                document.getElementById('hollowBottom').value = configObj.bottom || 5;
+                document.getElementById('hollowLeft').value = configObj.left || 3;
+                document.getElementById('hollowRight').value = configObj.right || 3;
+            } else if (type === 'face') {
+                document.getElementById('faceSeats').value = configObj.seats || 8;
+            } else {
+                if (typeof configObj.rows === 'string') {
+                    document.getElementById('areaRows').value = configObj.rows;
+                } else if (Array.isArray(configObj.rows)) {
+                    document.getElementById('areaRows').value = configObj.rows.join(',');
+                } else {
+                    document.getElementById('areaRows').value = '10,10,10';
+                }
+            }
+            onAreaTypeChange(type);
+            document.getElementById('areaModal').classList.add('active');
+        }
+
+        async function saveArea() {
+            const name = document.getElementById('areaName').value.trim();
+            if (!name) {
+                alert('请输入区域名称');
+                return;
+            }
+
+            const editId = document.getElementById('editAreaId').value;
+            const areaType = document.getElementById('areaType').value;
+
+            let config;
+            if (areaType === 'hollow') {
+                const top = parseInt(document.getElementById('hollowTop').value) || 5;
+                const bottom = parseInt(document.getElementById('hollowBottom').value) || 5;
+                const left = parseInt(document.getElementById('hollowLeft').value) || 3;
+                const right = parseInt(document.getElementById('hollowRight').value) || 3;
+                config = { top, bottom, left, right };
+            } else if (areaType === 'face') {
+                const seats = parseInt(document.getElementById('faceSeats').value) || 8;
+                config = { seats };
+                if (state.debugMode) console.log('Face config:', config);
+            } else {
+                const rowsInput = document.getElementById('areaRows').value.trim();
+                if (!rowsInput) {
+                    alert('请输入每行座位数');
+                    return;
+                }
+                config = { rows: rowsInput };
+            }
+
+            let positionX = 0;
+            let positionY = 0;
+
+            if (!editId) {
+                const existingAreas = document.querySelectorAll('.seating-area');
+                let maxBottom = 0;
+                existingAreas.forEach(area => {
+                    const rect = area.getBoundingClientRect();
+                    const bottom = rect.bottom;
+                    if (bottom > maxBottom) maxBottom = bottom;
+                });
+                const container = document.getElementById('seatingAreas');
+                const containerRect = container.getBoundingClientRect();
+                positionY = Math.round(maxBottom - containerRect.top + 20);
+                if (positionY < 0) positionY = 20;
+            }
+
+            try {
+                let resp;
+                if (editId) {
+                    resp = await fetch(`/api/seating/areas/${editId}`, {
+                        method: 'PUT',
+                        headers: {...getHeaders(), 'Content-Type': 'application/json'},
+                        body: JSON.stringify({name, area_type: areaType, config})
+                    });
+                    if (state.debugMode) {
+                        const result = await resp.json();
+                        console.log('编辑区域结果:', result);
+                    }
+                } else {
+                    const body = {name, area_type: areaType, config, position_x: positionX, position_y: positionY};
+                    console.log('创建区域请求:', JSON.stringify(body, null, 2));
+                    resp = await fetch(`/api/seating/${state.conferenceId}/areas`, {
+                        method: 'POST',
+                        headers: {...getHeaders(), 'Content-Type': 'application/json'},
+                        body: JSON.stringify(body)
+                    });
+                }
+
+                if (!resp.ok) throw new Error('保存失败');
+                const result = await resp.json();
+                if (state.debugMode) console.log('保存区域结果:', result);
+
+                closeAreaModal();
+                loadSeating();
+
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        async function deleteArea(areaId) {
+            const confirmed = await showConfirm('确定要删除该区域吗？');
+            if (!confirmed) return;
+            try {
+                const resp = await fetch(`/api/seating/areas/${areaId}`, { headers: getHeaders(), method: 'DELETE'});
+                if (!resp.ok) throw new Error('删除失败');
+                loadSeating();
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        function showAssignRulesModal() {
+            loadAssignRules();
+            document.getElementById('assignRulesModal').classList.add('active');
+        }
+
+        function closeAssignRulesModal() {
+            document.getElementById('assignRulesModal').classList.remove('active');
+        }
+
+        async function loadAssignRules() {
+            try {
+                const resp = await fetch(`/api/seating/${state.conferenceId}/priority`, { headers: getHeaders() });
+                const data = await resp.json();
+                document.getElementById('arrangeMode').value = data.arrange_mode || 'middle';
+                const fields = data.priority_fields || [];
+                if (fields.length >= 1) document.getElementById('priority1').value = fields[0];
+                if (fields.length >= 2) document.getElementById('priority2').value = fields[1];
+                if (fields.length >= 3) document.getElementById('priority3').value = fields[2];
+            } catch (e) {
+                console.error('加载分配规则失败', e);
+            }
+        }
+
+        async function saveAssignRules() {
+            const arrangeMode = document.getElementById('arrangeMode').value;
+            const priority1 = document.getElementById('priority1').value;
+            const priority2 = document.getElementById('priority2').value;
+            const priority3 = document.getElementById('priority3').value;
+            const priority_fields = [priority1, priority2, priority3];
+
+            try {
+                const resp = await fetch(`/api/seating/${state.conferenceId}/priority`, {
+                    method: 'PUT',
+                    headers: {...getHeaders(), 'Content-Type': 'application/json'},
+                    body: JSON.stringify({arrange_mode: arrangeMode, priority_fields})
+                });
+                if (!resp.ok) throw new Error('保存失败');
+                closeAssignRulesModal();
+                alert('分配规则已保存');
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        let currentPriorityTab = 'position';
+
+        function showPriorityModal() {
+            currentPriorityTab = 'position';
+            loadPriorityData();
+            document.getElementById('priorityModal').classList.add('active');
+        }
+
+        function closePriorityModal() {
+            document.getElementById('priorityModal').classList.remove('active');
+        }
+
+        function switchPriorityTab(tab) {
+            currentPriorityTab = tab;
+            document.getElementById('tabPosition').style.background = tab === 'position' ? '#007bff' : '#6c757d';
+            document.getElementById('tabCompany').style.background = tab === 'company' ? '#007bff' : '#6c757d';
+            loadPriorityData();
+        }
+
+        async function loadPriorityData() {
+            try {
+                const [fieldsResp, priorityResp] = await Promise.all([
+                    fetch(`/api/seating/${state.conferenceId}/participant-fields`, { headers: getHeaders() }),
+                    fetch(`/api/seating/${state.conferenceId}/priority`, { headers: getHeaders() })
+                ]);
+                const fieldsData = await fieldsResp.json();
+                const priorityData = await priorityResp.json();
+
+                const items = currentPriorityTab === 'position'
+                    ? (fieldsData.positions || [])
+                    : (fieldsData.companies || []);
+                const priorityMap = currentPriorityTab === 'position'
+                    ? (priorityData.position_priority || {})
+                    : (priorityData.company_priority || {});
+
+                let html = '';
+                items.forEach(item => {
+                    const val = priorityMap[item] || '';
+                    html += `<tr>
+                        <td style="padding:8px;border-bottom:1px solid #dee2e6;">${item}</td>
+                        <td style="padding:8px;border-bottom:1px solid #dee2e6;">
+                            <input type="number" class="priority-input" data-name="${item}" value="${val}"
+                                style="width:80px;padding:6px;border:1px solid #ddd;border-radius:4px;" placeholder="1">
+                        </td>
+                    </tr>`;
+                });
+                document.getElementById('priorityTableBody').innerHTML = html;
+            } catch (e) {
+                console.error('加载优先级数据失败', e);
+            }
+        }
+
+        async function savePriorityConfig() {
+            const priorityMap = {};
+            document.querySelectorAll('.priority-input').forEach(input => {
+                const name = input.dataset.name;
+                const val = input.value.trim();
+                if (val) priorityMap[name] = parseInt(val);
+            });
+
+            try {
+                const getResp = await fetch(`/api/seating/${state.conferenceId}/priority`, { headers: getHeaders() });
+                const existing = await getResp.json();
+
+                const position_priority = currentPriorityTab === 'position' ? priorityMap : (existing.position_priority || {});
+                const company_priority = currentPriorityTab === 'company' ? priorityMap : (existing.company_priority || {});
+
+                const resp = await fetch(`/api/seating/${state.conferenceId}/priority`, {
+                    method: 'PUT',
+                    headers: {...getHeaders(), 'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        arrange_mode: existing.arrange_mode || 'middle',
+                        priority_fields: existing.priority_fields || [],
+                        position_priority,
+                        company_priority
+                    })
+                });
+                if (!resp.ok) throw new Error('保存失败');
+                closePriorityModal();
+                alert('优先级已保存');
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        async function autoAssignSeats() {
+            const confirmed = await showConfirm('确定要自动分配座位吗？');
+            if (!confirmed) return;
+            try {
+                const resp = await fetch(`/api/seating/${state.conferenceId}/assignments/auto`, {
+                    method: 'POST',
+                    headers: {...getHeaders(), 'Content-Type': 'application/json'},
+                    body: JSON.stringify({})
+                });
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    throw new Error(err.detail || '分配失败');
+                }
+                loadSeating();
+                alert('自动分配完成');
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        async function clearAllSeats() {
+            const confirmed = await showConfirm('确定要清空所有座位分配吗？');
+            if (!confirmed) return;
+            try {
+                const resp = await fetch(`/api/seating/${state.conferenceId}/assignments`, { headers: getHeaders(), method: 'DELETE'});
+                if (!resp.ok) throw new Error('清空失败');
+                loadSeating();
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        function toggleHotelDetail() {
+            state.showHotelDetail = !state.showHotelDetail;
+            const btn = document.getElementById('toggleHotelDetailBtn');
+            if (state.showHotelDetail) {
+                btn.textContent = '📋 隐藏详情';
+                btn.classList.remove('btn-info');
+                btn.classList.add('btn-warning');
+            } else {
+                btn.textContent = '📋 显示详情';
+                btn.classList.remove('btn-warning');
+                btn.classList.add('btn-info');
+            }
+            loadHotel();
+        }
+
+        function toggleSeatingDetail() {
+            state.showSeatingDetail = !state.showSeatingDetail;
+            const btn = document.getElementById('toggleSeatingDetailBtn');
+            if (state.showSeatingDetail) {
+                btn.textContent = '📋 隐藏详情';
+                btn.classList.remove('btn-info');
+                btn.classList.add('btn-warning');
+            } else {
+                btn.textContent = '📋 显示详情';
+                btn.classList.remove('btn-warning');
+                btn.classList.add('btn-info');
+            }
+            loadSeating();
+        }
+
+        function toggleRestaurantDetail() {
+            state.showRestaurantDetail = !state.showRestaurantDetail;
+            const btn = document.getElementById('toggleRestaurantDetailBtn');
+            if (state.showRestaurantDetail) {
+                btn.textContent = '📋 隐藏详情';
+                btn.classList.remove('btn-info');
+                btn.classList.add('btn-warning');
+            } else {
+                btn.textContent = '📋 显示详情';
+                btn.classList.remove('btn-warning');
+                btn.classList.add('btn-info');
+            }
+            loadRestaurant();
+        }
+
+        async function loadHotel() {
+            if (!state.conferenceId) return;
+            try {
+                const resp = await fetch(`/api/hotel/${state.conferenceId}/summary`, { headers: getHeaders() });
+                if (!resp.ok) throw new Error('加载失败');
+                const data = await resp.json();
+
+                if (data.hotels && data.hotels.length > 0) {
+                    document.getElementById('hotelSummary').style.display = 'block';
+                    document.getElementById('hotelCount').textContent = data.hotels.length;
+                    document.getElementById('hotelRoomCount').textContent = data.total_rooms;
+                    document.getElementById('hotelTotalCapacity').textContent = data.total_capacity;
+                    document.getElementById('hotelAvailableCount').textContent = data.available_capacity;
+                    document.getElementById('hotelParticipantCount').textContent = data.hotel_participants || 0;
+                    document.getElementById('hotelAssignedCount').textContent = data.total_assigned;
+                    document.getElementById('hotelUnassignedCount').textContent = data.unassigned_count;
+
+                    let html = '';
+                    for (const h of data.hotels) {
+                        html += `
+                        <div class="hotel-card" style="border:1px solid #ddd;border-radius:8px;padding:15px;margin-bottom:15px;background:#fff;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                                <h4 style="margin:0;">🏨 ${escapeHtml(h.hotel_name)}</h4>
+                                <div>
+                                    <button class="btn btn-primary" style="padding:4px 8px;font-size:12px;margin-right:4px;" onclick="showRoomModal(${h.hotel_id})">➕ 添加房间</button>
+                                    <button class="btn btn-danger" style="padding:4px 8px;font-size:12px;" onclick="deleteHotel(${h.hotel_id})">🗑️ 删除</button>
+                                </div>
+                            </div>
+                            <div style="color:#666;font-size:13px;margin-bottom:10px;">
+                                房间数: ${h.room_count} | 已入住: ${h.occupied} | 可用: ${h.available}
+                            </div>
+                            <div id="hotel-rooms-${h.hotel_id}"></div>
+                        </div>`;
+                    }
+                    document.getElementById('hotelList').innerHTML = html;
+
+                    for (const h of data.hotels) {
+                        loadHotelRooms(h.hotel_id);
+                    }
+                } else {
+                    document.getElementById('hotelSummary').style.display = 'none';
+                    document.getElementById('hotelList').innerHTML = '<div style="text-align:center;color:#999;padding:40px;">暂无酒店，请添加</div>';
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function loadHotelRooms(hotelId) {
+            try {
+                const resp = await fetch(`/api/hotel/${state.conferenceId}/rooms?hotel_id=${hotelId}`, { headers: getHeaders() });
+                if (!resp.ok) throw new Error('加载失败');
+                const rooms = await resp.json();
+
+                const assignResp = await fetch(`/api/hotel/${state.conferenceId}/assignments`, { headers: getHeaders() });
+                if (!assignResp.ok) throw new Error('加载分配失败');
+                const assignments = await assignResp.json();
+
+                const partResp = await fetch(`/api/participants/${state.conferenceId}`, { headers: getHeaders() });
+                if (!partResp.ok) throw new Error('加载参会人失败');
+                const participants = await partResp.json();
+
+                const showDetail = state.showHotelDetail;
+                const roomWidth = showDetail ? '140px' : '90px';
+                const roomPadding = showDetail ? '10px' : '8px';
+
+                let html = `<div style="display:flex;flex-wrap:wrap;gap:${showDetail ? '12px' : '8px'};">`;
+                for (const r of rooms) {
+                    const roomAssignments = assignments.filter(a => a.room_id === r.id);
+                    const maxOccupancy = r.room_type === 'double' ? 2 : (r.room_type === 'suite' ? 4 : 1);
+                    const isFull = roomAssignments.length >= maxOccupancy;
+                    const isEmpty = roomAssignments.length === 0;
+
+                    let occupantsHtml = '';
+                    if (roomAssignments.length > 0) {
+                        if (showDetail) {
+                            const names = [];
+                            const companies = [];
+                            const positions = [];
+                            roomAssignments.forEach(a => {
+                                const p = participants.find(p => p.id === a.participant_id);
+                                names.push({
+                                    name: p ? p.name : '',
+                                    assignmentId: a.id
+                                });
+                                companies.push(p ? (p.company || '') : '');
+                                positions.push(p ? (p.position || '') : '');
+                            });
+                            
+                            occupantsHtml = `<div style="margin-top:4px;">
+                                <div style="display:flex;gap:4px;">
+                                    ${names.map((n, i) => `<div style="flex:1;font-size:11px;color:#4caf50;padding:2px;background:rgba(255,255,255,0.5);border-radius:3px;display:flex;align-items:center;justify-content:space-between;">
+                                        <span style="font-weight:500;">${escapeHtml(n.name)}</span>
+                                        <span onclick="event.stopPropagation();unassignRoom(${n.assignmentId})" style="cursor:pointer;color:#f44336;font-weight:bold;font-size:12px;">×</span>
+                                    </div>`).join('')}
+                                </div>
+                                <div style="display:flex;gap:4px;margin-top:2px;">
+                                    ${companies.map(c => `<div style="flex:1;font-size:10px;color:#666;padding:1px 2px;">${escapeHtml(c)}</div>`).join('')}
+                                </div>
+                                <div style="display:flex;gap:4px;">
+                                    ${positions.map(p => `<div style="flex:1;font-size:10px;color:#888;padding:1px 2px;">${escapeHtml(p)}</div>`).join('')}
+                                </div>
+                            </div>`;
+                        } else {
+                            occupantsHtml = roomAssignments.map(a => {
+                                const p = participants.find(p => p.id === a.participant_id);
+                                const name = p ? p.name : '';
+                                return `<div style="font-size:10px;color:#4caf50;margin-top:2px;display:flex;align-items:center;justify-content:center;gap:2px;">
+                                    <span>${escapeHtml(name)}</span>
+                                    <span onclick="event.stopPropagation();unassignRoom(${a.id})" style="cursor:pointer;color:#f44336;font-weight:bold;">×</span>
+                                </div>`;
+                            }).join('');
+                        }
+                    }
+
+                    const roomClass = isEmpty ? 'room-available' : (isFull ? 'room-full' : 'room-partial');
+                    const bgColor = isEmpty ? '#f5f5f5' : (isFull ? '#ffebee' : '#e8f5e9');
+                    const borderColor = isEmpty ? '#ddd' : (isFull ? '#f44336' : '#4caf50');
+
+                    html += `
+                    <div class="room-item ${roomClass}" data-room-id="${r.id}" style="width:${roomWidth};padding:${roomPadding};border-radius:6px;text-align:center;cursor:pointer;background:${bgColor};border:2px solid ${borderColor};" onclick="showHotelAssignModal(${r.id}, ${roomAssignments.length})">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <span style="font-weight:bold;font-size:14px;">${escapeHtml(r.room_number)}</span>
+                            <span onclick="event.stopPropagation();deleteRoom(${r.id})" style="cursor:pointer;color:#999;font-size:16px;padding:2px;" title="删除房间">×</span>
+                        </div>
+                        <div style="font-size:12px;color:#666;margin-bottom:2px;">${r.room_type === 'single' ? '单人间' : r.room_type === 'double' ? '双人间' : '套房'} ${roomAssignments.length}/${maxOccupancy}</div>
+                        ${occupantsHtml}
+                    </div>`;
+                }
+                html += '</div>';
+                document.getElementById(`hotel-rooms-${hotelId}`).innerHTML = html;
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function showHotelModal() {
+            document.getElementById('hotelModalTitle').textContent = '添加酒店';
+            document.getElementById('editHotelId').value = '';
+            document.getElementById('hotelName').value = '';
+            document.getElementById('hotelLocation').value = '';
+            document.getElementById('hotelContact').value = '';
+            document.getElementById('hotelNote').value = '';
+            document.getElementById('hotelModal').style.display = 'block';
+        }
+
+        function closeHotelModal() {
+            document.getElementById('hotelModal').style.display = 'none';
+        }
+
+        async function saveHotel() {
+            const name = document.getElementById('hotelName').value.trim();
+            if (!name) {
+                alert('请输入酒店名称');
+                return;
+            }
+            const editId = document.getElementById('editHotelId').value;
+            const location = document.getElementById('hotelLocation').value.trim();
+            const contact = document.getElementById('hotelContact').value.trim();
+            const note = document.getElementById('hotelNote').value.trim();
+
+            try {
+                let resp;
+                if (editId) {
+                    resp = await fetch(`/api/hotel/hotels/${editId}`, {
+                        method: 'PUT',
+                        headers: {...getHeaders(), 'Content-Type': 'application/json'},
+                        body: JSON.stringify({name, location, contact, note})
+                    });
+                } else {
+                    resp = await fetch(`/api/hotel/${state.conferenceId}/hotels`, {
+                        method: 'POST',
+                        headers: {...getHeaders(), 'Content-Type': 'application/json'},
+                        body: JSON.stringify({name, location, contact, note})
+                    });
+                }
+                if (!resp.ok) throw new Error('保存失败');
+                closeHotelModal();
+                loadHotel();
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        async function deleteHotel(hotelId) {
+            const confirmed = await showConfirm('确定删除该酒店吗？');
+            if (!confirmed) return;
+            try {
+                const resp = await fetch(`/api/hotel/hotels/${hotelId}`, { headers: getHeaders(), method: 'DELETE'});
+                if (!resp.ok) throw new Error('删除失败');
+                loadHotel();
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        async function deleteRoom(roomId) {
+            const confirmed = await showConfirm('确定删除该房间吗？');
+            if (!confirmed) return;
+            try {
+                const resp = await fetch(`/api/hotel/rooms/${roomId}`, { headers: getHeaders(), method: 'DELETE'});
+                if (!resp.ok) throw new Error('删除失败');
+                loadHotel();
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        function showRoomModal(hotelId) {
+            document.getElementById('roomHotelId').value = hotelId;
+            document.getElementById('roomNumbers').value = '';
+            document.getElementById('roomType').value = 'single';
+            document.getElementById('roomModal').style.display = 'block';
+        }
+
+        function closeRoomModal() {
+            document.getElementById('roomModal').style.display = 'none';
+        }
+
+        async function saveRooms() {
+            const hotelId = document.getElementById('roomHotelId').value;
+            const roomNumbersText = document.getElementById('roomNumbers').value.trim();
+            const roomType = document.getElementById('roomType').value;
+
+            if (!roomNumbersText) {
+                alert('请输入房间号');
+                return;
+            }
+
+            const lines = roomNumbersText.split('\n').map(r => r.trim()).filter(r => r);
+            const roomNumbers = [];
+            
+            for (const line of lines) {
+                if (line.includes('~')) {
+                    const parts = line.split('~');
+                    if (parts.length === 2) {
+                        const start = parts[0].trim();
+                        const end = parts[1].trim();
+                        const startNum = parseInt(start);
+                        const endNum = parseInt(end);
+                        
+                        if (!isNaN(startNum) && !isNaN(endNum) && endNum >= startNum) {
+                            const prefix = start.replace(/\d+$/, '');
+                            const startDigits = start.match(/\d+$/);
+                            const digitLen = startDigits ? startDigits[0].length : 0;
+                            
+                            for (let i = startNum; i <= endNum; i++) {
+                                let roomNum;
+                                if (digitLen > 0) {
+                                    roomNum = prefix + i.toString().padStart(digitLen, '0');
+                                } else {
+                                    roomNum = prefix + i;
+                                }
+                                roomNumbers.push(roomNum);
+                            }
+                        } else {
+                            roomNumbers.push(line);
+                        }
+                    } else {
+                        roomNumbers.push(line);
+                    }
+                } else {
+                    roomNumbers.push(line);
+                }
+            }
+
+            const uniqueRoomNumbers = [...new Set(roomNumbers)];
+            
+            try {
+                const existingResp = await fetch(`/api/hotel/${state.conferenceId}/rooms?hotel_id=${hotelId}`, { headers: getHeaders() });
+                if (existingResp.ok) {
+                    const existingRooms = await existingResp.json();
+                    const existingNumbers = new Set(existingRooms.map(r => r.room_number));
+                    const duplicates = uniqueRoomNumbers.filter(n => existingNumbers.has(n));
+                    if (duplicates.length > 0) {
+                        alert(`以下房间号已存在：${duplicates.join(', ')}`);
+                        return;
+                    }
+                }
+
+                const rooms = uniqueRoomNumbers.map(num => ({
+                    room_number: num,
+                    room_type: roomType
+                }));
+
+                const resp = await fetch(`/api/hotel/${state.conferenceId}/rooms/batch`, {
+                    method: 'POST',
+                    headers: {...getHeaders(), 'Content-Type': 'application/json'},
+                    body: JSON.stringify({hotel_id: parseInt(hotelId), rooms})
+                });
+                if (!resp.ok) {
+                    const errData = await resp.json();
+                    throw new Error(errData.detail || '保存失败');
+                }
+                closeRoomModal();
+                loadHotel();
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        let currentAssignRoomId = null;
+        async function showHotelAssignModal(roomId, currentCount) {
+            currentAssignRoomId = roomId;
+            const partResp = await fetch(`/api/participants/${state.conferenceId}`, { headers: getHeaders() });
+            if (!partResp.ok) throw new Error('加载参会人失败');
+            const participants = await partResp.json();
+
+            const assignResp = await fetch(`/api/hotel/${state.conferenceId}/assignments`, { headers: getHeaders() });
+            if (!assignResp.ok) throw new Error('加载分配失败');
+            const assignments = await assignResp.json();
+
+            const assignedParticipantIds = [...new Set(assignments.map(a => a.participant_id))];
+
+            const hotelParticipants = participants.filter(p => p.has_hotel === true);
+            const availableParticipants = hotelParticipants.filter(p => !assignedParticipantIds.includes(p.id));
+
+            if (availableParticipants.length === 0) {
+                alert('所有参会人已被分配房间');
+                return;
+            }
+
+            const roomResp = await fetch(`/api/hotel/${state.conferenceId}/rooms?hotel_id=0`, { headers: getHeaders() });
+            let roomType = '单';
+            let maxOcc = 1;
+            let roomTypeCode = 'single';
+            if (roomResp.ok) {
+                const rooms = await roomResp.json();
+                const room = rooms.find(r => r.id === roomId);
+                if (room) {
+                    roomTypeCode = room.room_type;
+                    if (room.room_type === 'double') { roomType = '双'; maxOcc = 2; }
+                    else if (room.room_type === 'suite') { roomType = '套'; maxOcc = 4; }
+                }
+            }
+
+            const remainingSlots = maxOcc - currentCount;
+            let checkboxHtml = '<div style="max-height:250px;overflow-y:auto;">';
+            for (const p of availableParticipants) {
+                checkboxHtml += `<label style="display:block;padding:6px;border-bottom:1px solid #eee;cursor:pointer;">
+                    <input type="checkbox" class="participant-check" value="${p.id}" style="margin-right:8px;">
+                    ${escapeHtml(p.name)} <span style="color:#999;font-size:12px;">(${escapeHtml(p.company || '无公司')})</span>
+                </label>`;
+            }
+            checkboxHtml += '</div>';
+
+            const modal = document.createElement('div');
+            modal.id = 'hotelAssignModal';
+            modal.style = 'position:fixed;z-index:2000;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;';
+            modal.innerHTML = `
+                <div style="background:#fff;padding:20px;border-radius:8px;width:380px;">
+                    <h3 style="margin-top:0;">分配房间</h3>
+                    <p style="color:#666;">房型: ${roomType}人间 | 已住: <strong>${currentCount}</strong>/${maxOcc}人 | 剩余: <strong>${remainingSlots}</strong>个床位</p>
+                    ${remainingSlots <= 0 ? '<p style="color:#f44336;">房间已满，请先退房</p>' : checkboxHtml}
+                    <div style="text-align:right;margin-top:15px;">
+                        <button class="btn btn-secondary" onclick="closeHotelAssignModal()">取消</button>
+                        ${remainingSlots > 0 ? '<button class="btn btn-primary" onclick="assignRoom()">确认分配</button>' : ''}
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+        }
+
+        function closeHotelAssignModal() {
+            const modal = document.getElementById('hotelAssignModal');
+            if (modal) modal.remove();
+        }
+
+        async function assignRoom() {
+            const selected = document.querySelectorAll('.participant-check:checked');
+            if (selected.length === 0) {
+                alert('请选择参会人');
+                return;
+            }
+            try {
+                for (const cb of selected) {
+                    const participantId = parseInt(cb.value);
+                    const resp = await fetch(`/api/hotel/${state.conferenceId}/assignments`, {
+                        method: 'POST',
+                        headers: {...getHeaders(), 'Content-Type': 'application/json'},
+                        body: JSON.stringify({room_id: currentAssignRoomId, participant_id: participantId})
+                    });
+                    if (!resp.ok) {
+                        const err = await resp.json();
+                        console.error(`分配失败: ${err.detail}`);
+                    }
+                }
+                closeHotelAssignModal();
+                loadHotel();
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        async function unassignRoom(assignmentId) {
+            const confirmed = await showConfirm('确定要退房吗？');
+            if (!confirmed) return;
+            try {
+                const delResp = await fetch(`/api/hotel/assignments/${assignmentId}`, { headers: getHeaders(), method: 'DELETE'});
+                if (!delResp.ok) throw new Error('退房失败');
+                closeHotelAssignModal();
+                loadHotel();
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        async function autoAssignRooms() {
+            const confirmed = await showConfirm('确定要自动分配房间吗？\n\n将把未分配房间的参会人员自动分配到可用房间中。');
+            if (!confirmed) return;
+            try {
+                const resp = await fetch(`/api/hotel/${state.conferenceId}/assignments/auto`, {
+                    method: 'POST',
+                    headers: {...getHeaders(), 'Content-Type': 'application/json'},
+                    body: JSON.stringify({})
+                });
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    throw new Error(err.detail || '分配失败');
+                }
+                const result = await resp.json();
+                loadHotel();
+                alert(result.message);
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        async function clearAllRoomAssignments() {
+            const confirmed = await showConfirm('确定要清空所有房间分配吗？\n\n此操作不可恢复！');
+            if (!confirmed) return;
+            try {
+                const resp = await fetch(`/api/hotel/${state.conferenceId}/assignments/all`, {
+                    method: 'DELETE',
+                    headers: getHeaders()
+                });
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    throw new Error(err.detail || '清空失败');
+                }
+                const result = await resp.json();
+                loadHotel();
+                alert(result.message);
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        async function loadRestaurant() {
+            if (!state.conferenceId) return;
+            try {
+                const resp = await fetch(`/api/restaurant/${state.conferenceId}/summary`, { headers: getHeaders() });
+                if (!resp.ok) throw new Error('加载餐厅数据失败');
+                const data = await resp.json();
+
+                if (data.restaurants && data.restaurants.length > 0) {
+                    document.getElementById('restaurantSummary').style.display = 'block';
+                    document.getElementById('restaurantCount').textContent = data.restaurants.length;
+                    document.getElementById('restaurantTableCount').textContent = data.table_count;
+                    document.getElementById('restaurantTotalCapacity').textContent = data.total_capacity;
+                    document.getElementById('restaurantAvailableCount').textContent = data.total_capacity - data.assigned_count;
+                    document.getElementById('restaurantParticipantCount').textContent = data.meal_participants || 0;
+                    document.getElementById('restaurantAssignedCount').textContent = data.assigned_count;
+                    document.getElementById('restaurantUnassignedCount').textContent = data.unassigned_count;
+
+                    let html = '';
+                    for (const r of data.restaurants) {
+                        html += `<div class="restaurant-card" style="border:1px solid #ddd;border-radius:8px;padding:15px;margin-bottom:15px;background:#fff;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                                <h4 style="margin:0;">🍽️ ${escapeHtml(r.name)}</h4>
+                                <div class="no-export">
+                                    <button class="btn btn-primary" style="padding:4px 8px;font-size:12px;margin-right:4px;" onclick="showTableModal(${r.id})">➕ 添加桌位</button>
+                                    <button class="btn btn-danger" style="padding:4px 8px;font-size:12px;" onclick="deleteRestaurant(${r.id})">🗑️ 删除</button>
+                                </div>
+                            </div>
+                            <p style="margin:0 0 10px 0;color:#666;font-size:12px;">地址: ${escapeHtml(r.address || '未设置')} | 容量: ${r.capacity}人</p>
+                            <div id="restaurant-tables-${r.id}"></div>
+                        </div>`;
+                    }
+                    document.getElementById('restaurantList').innerHTML = html;
+
+                    for (const r of data.restaurants) {
+                        loadRestaurantTables(r.id);
+                    }
+                } else {
+                    document.getElementById('restaurantSummary').style.display = 'none';
+                    document.getElementById('restaurantList').innerHTML = '<div style="text-align:center;color:#999;padding:40px;">暂无餐厅，请添加</div>';
+                }
+            } catch (e) {
+                console.error('加载餐厅失败:', e);
+            }
+        }
+
+        function getRestaurantSeatContent(p, seatIndex, isAssigned) {
+            if (!isAssigned) {
+                return `<span style="font-size:9px;">${seatIndex + 1}</span>`;
+            }
+            const showDetail = state.showRestaurantDetail;
+            if (showDetail) {
+                const company = p.company || '';
+                const position = p.position || '';
+                return `<span style="font-size:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:38px;">${escapeHtml(p.name)}</span>
+                    ${company ? `<span style="font-size:7px;opacity:0.9;max-width:38px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(company)}</span>` : ''}
+                    ${position ? `<span style="font-size:7px;opacity:0.8;max-width:38px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(position)}</span>` : ''}`;
+            }
+            return `<span style="font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:38px;">${escapeHtml(p.name)}</span>`;
+        }
+
+        function getRestaurantSeatContentShort(p, seatIndex, isAssigned) {
+            if (!isAssigned) {
+                return seatIndex + 1;
+            }
+            const showDetail = state.showRestaurantDetail;
+            if (showDetail) {
+                const company = p.company || '';
+                const position = p.position || '';
+                return `<span style="font-size:8px;">${escapeHtml(p.name.substring(0, 2))}</span>
+                    ${company ? `<br><span style="font-size:6px;opacity:0.9;">${escapeHtml(company.substring(0, 4))}</span>` : ''}`;
+            }
+            return escapeHtml(p.name.substring(0, 2));
+        }
+
+        async function loadRestaurantTables(restaurantId) {
+            try {
+                const resp = await fetch(`/api/restaurant/${state.conferenceId}/tables?restaurant_id=${restaurantId}`, { headers: getHeaders() });
+                if (!resp.ok) throw new Error('加载桌位失败');
+                const tables = await resp.json();
+
+                const assignResp = await fetch(`/api/restaurant/${state.conferenceId}/assignments`, { headers: getHeaders() });
+                const assignments = await assignResp.json();
+                const partResp = await fetch(`/api/participants/${state.conferenceId}`, { headers: getHeaders() });
+                const participants = await partResp.json();
+
+                let html = '<div style="display:flex;flex-wrap:wrap;gap:15px;margin-top:10px;">';
+                for (const t of tables) {
+                    const tableAssignments = assignments.filter(a => a.table_id === t.id);
+                    const assignedMap = {};
+                    for (const a of tableAssignments) {
+                        const p = participants.find(pp => pp.id === a.participant_id);
+                        if (p) assignedMap[p.id] = p;
+                    }
+
+                    const typeName = t.table_type === 'round' ? '包间' : (t.table_type === 'room' ? '包间' : (t.table_type === 'long' ? '长桌' : '大厅'));
+                    const tableSize = Math.min(80, 40 + t.capacity * 2);
+
+                    let seatHtml = '';
+                    if (t.table_type === 'round' || t.table_type === 'hall') {
+                        const containerSize = 240;
+                        const tableDiameter = 100;
+                        const tableRadius = tableDiameter / 2;
+                        const seatRadius = 85;
+                        const seatSize = 44;
+                        const center = containerSize / 2;
+
+                        seatHtml = `<div style="position:relative;width:${containerSize}px;height:${containerSize}px;margin:0 auto;">`;
+                        seatHtml += `<div style="position:absolute;left:${center - tableRadius}px;top:${center - tableRadius}px;width:${tableDiameter}px;height:${tableDiameter}px;background:#f8f8f8;border:4px solid #888;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.15);display:flex;align-items:center;justify-content:center;font-size:12px;color:#555;font-weight:500;">${escapeHtml(t.name)}</div>`;
+
+                        for (let i = 0; i < t.capacity; i++) {
+                            const angle = (360 / t.capacity) * i - 90;
+                            const rad = angle * Math.PI / 180;
+                            const x = center + seatRadius * Math.cos(rad) - seatSize / 2;
+                            const y = center + seatRadius * Math.sin(rad) - seatSize / 2;
+                            const seatAssignment = tableAssignments.find(a => a.seat_index === i);
+                            const p = seatAssignment ? participants.find(pp => pp.id === seatAssignment.participant_id) : null;
+                            const isAssigned = !!p;
+                            const bgColor = isAssigned ? '#4a90d9' : '#fff';
+                            const textColor = isAssigned ? '#fff' : '#666';
+                            const borderColor = isAssigned ? '#3a7bc8' : '#ddd';
+                            const assignmentId = seatAssignment ? seatAssignment.id : '';
+                            const detailSize = state.showRestaurantDetail ? 55 : seatSize;
+                            seatHtml += `<div class="restaurant-seat ${isAssigned ? 'occupied' : 'empty'}"
+                                data-table-id="${t.id}"
+                                data-seat-index="${i}"
+                                data-assignment-id="${assignmentId}"
+                                data-participant-id="${isAssigned ? p.id : ''}"
+                                ${isAssigned ? 'draggable="true"' : ''}
+                                ondragstart="handleRestaurantDragStart(event)"
+                                ondragover="handleRestaurantDragOver(event)"
+                                ondrop="handleRestaurantDrop(event)"
+                                ondragend="handleRestaurantDragEnd(event)"
+                                style="position:absolute;left:${x}px;top:${y}px;width:${detailSize}px;height:${detailSize}px;background:${bgColor};border:2px solid ${borderColor};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;color:${textColor};cursor:${isAssigned ? 'pointer' : 'pointer'};box-shadow:${isAssigned ? '0 2px 4px rgba(74,144,217,0.4)' : '0 1px 3px rgba(0,0,0,0.1)'};"
+                                onclick="${isAssigned ? `clearRestaurantSeat(${assignmentId}, ${t.id})` : `showRestaurantAssignModal(${t.id}, ${i})`}"
+                                title="${isAssigned ? '点击取消分配' : '点击分配'}">
+                                ${getRestaurantSeatContent(p, i, isAssigned)}
+                            </div>`;
+                        }
+                        seatHtml += '</div>';
+                    } else if (t.table_type === 'long') {
+                        const tableWidth = 160;
+                        const tableHeight = 50;
+                        const seatsPerSide = Math.ceil(t.capacity / 2);
+                        const seatSize = 42;
+                        const seatGap = 8;
+                        const topGap = 8;
+                        const totalSeatsWidth = seatsPerSide * seatSize + (seatsPerSide - 1) * seatGap;
+                        const containerWidth = Math.max(200, totalSeatsWidth + 20);
+                        const startX = (containerWidth - totalSeatsWidth) / 2;
+                        const totalHeight = seatSize + topGap + tableHeight + topGap + seatSize;
+                        const centerY = 120;
+                        const tableTop = centerY - tableHeight / 2;
+                        seatHtml = `<div style="position:relative;width:${containerWidth}px;height:240px;margin:0 auto;">`;
+                        seatHtml += `<div style="position:absolute;left:${(containerWidth - tableWidth) / 2}px;top:${tableTop}px;width:${tableWidth}px;height:${tableHeight}px;background:#f5f5f5;border:3px solid #999;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#666;">${escapeHtml(t.name)}</div>`;
+
+                        for (let i = 0; i < seatsPerSide && i < t.capacity; i++) {
+                            const seatAssignment = tableAssignments.find(a => a.seat_index === i);
+                            const p = seatAssignment ? participants.find(pp => pp.id === seatAssignment.participant_id) : null;
+                            const isAssigned = !!p;
+                            const assignmentId = seatAssignment ? seatAssignment.id : '';
+                            const seatX = startX + i * (seatSize + seatGap);
+                            const topSeatTop = tableTop - topGap - seatSize;
+                            const detailSize = state.showRestaurantDetail ? 50 : seatSize;
+                            seatHtml += `<div class="restaurant-seat ${isAssigned ? 'occupied' : 'empty'}"
+                                data-table-id="${t.id}" data-seat-index="${i}" data-assignment-id="${assignmentId}"
+                                data-participant-id="${isAssigned ? p.id : ''}"
+                                ${isAssigned ? 'draggable="true"' : ''}
+                                ondragstart="handleRestaurantDragStart(event)" ondragover="handleRestaurantDragOver(event)"
+                                ondrop="handleRestaurantDrop(event)" ondragend="handleRestaurantDragEnd(event)"
+                                style="position:absolute;left:${seatX}px;top:${topSeatTop}px;width:${detailSize}px;height:${detailSize}px;background:${isAssigned ? '#4a90d9' : '#fff'};border:2px solid ${isAssigned ? '#3a7bc8' : '#ddd'};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;color:${isAssigned ? '#fff' : '#666'};cursor:pointer;"
+                                onclick="${isAssigned ? `clearRestaurantSeat(${assignmentId}, ${t.id})` : `showRestaurantAssignModal(${t.id}, ${i})`}">${getRestaurantSeatContentShort(p, i, isAssigned)}</div>`;
+                        }
+                        for (let i = 0; i < seatsPerSide && (seatsPerSide + i) < t.capacity; i++) {
+                            const seatAssignment = tableAssignments.find(a => a.seat_index === (seatsPerSide + i));
+                            const p = seatAssignment ? participants.find(pp => pp.id === seatAssignment.participant_id) : null;
+                            const isAssigned = !!p;
+                            const assignmentId = seatAssignment ? seatAssignment.id : '';
+                            const seatX = startX + i * (seatSize + seatGap);
+                            const bottomSeatTop = tableTop + tableHeight + topGap;
+                            const detailSize = state.showRestaurantDetail ? 50 : seatSize;
+                            seatHtml += `<div class="restaurant-seat ${isAssigned ? 'occupied' : 'empty'}"
+                                data-table-id="${t.id}" data-seat-index="${seatsPerSide + i}" data-assignment-id="${assignmentId}"
+                                data-participant-id="${isAssigned ? p.id : ''}"
+                                ${isAssigned ? 'draggable="true"' : ''}
+                                ondragstart="handleRestaurantDragStart(event)" ondragover="handleRestaurantDragOver(event)"
+                                ondrop="handleRestaurantDrop(event)" ondragend="handleRestaurantDragEnd(event)"
+                                style="position:absolute;left:${seatX}px;top:${bottomSeatTop}px;width:${detailSize}px;height:${detailSize}px;background:${isAssigned ? '#4a90d9' : '#fff'};border:2px solid ${isAssigned ? '#3a7bc8' : '#ddd'};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;color:${isAssigned ? '#fff' : '#666'};cursor:pointer;"
+                                onclick="${isAssigned ? `clearRestaurantSeat(${assignmentId}, ${t.id})` : `showRestaurantAssignModal(${t.id}, ${seatsPerSide + i})`}">${getRestaurantSeatContentShort(p, seatsPerSide + i, isAssigned)}</div>`;
+                        }
+                        seatHtml += '</div>';
+                    } else {
+                        seatHtml = `<div style="position:relative;width:160px;min-height:100px;margin:0 auto;text-align:center;">`;
+                        seatHtml += `<div style="width:140px;height:50px;background:#f5f5f5;border:3px solid #999;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;color:#666;margin-top:25px;">${escapeHtml(t.name)}</div>`;
+                        seatHtml += `<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:3px;margin-top:10px;max-width:160px;">`;
+                        for (let i = 0; i < t.capacity; i++) {
+                            const seatAssignment = tableAssignments.find(a => a.seat_index === i);
+                            const p = seatAssignment ? participants.find(pp => pp.id === seatAssignment.participant_id) : null;
+                            const isAssigned = !!p;
+                            const assignmentId = seatAssignment ? seatAssignment.id : '';
+                            const detailWidth = state.showRestaurantDetail ? 45 : 35;
+                            const detailHeight = state.showRestaurantDetail ? 35 : 26;
+                            seatHtml += `<div class="restaurant-seat ${isAssigned ? 'occupied' : 'empty'}"
+                                data-table-id="${t.id}" data-seat-index="${i}" data-assignment-id="${assignmentId}"
+                                data-participant-id="${isAssigned ? p.id : ''}"
+                                ${isAssigned ? 'draggable="true"' : ''}
+                                ondragstart="handleRestaurantDragStart(event)" ondragover="handleRestaurantDragOver(event)"
+                                ondrop="handleRestaurantDrop(event)" ondragend="handleRestaurantDragEnd(event)"
+                                style="width:${detailWidth}px;height:${detailHeight}px;background:${isAssigned ? '#4a90d9' : '#fff'};border:2px solid ${isAssigned ? '#3a7bc8' : '#ddd'};border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;color:${isAssigned ? '#fff' : '#666'};cursor:pointer;"
+                                onclick="${isAssigned ? `clearRestaurantSeat(${assignmentId}, ${t.id})` : `showRestaurantAssignModal(${t.id}, ${i})`}">${getRestaurantSeatContentShort(p, i, isAssigned)}</div>`;
+                        }
+                        seatHtml += '</div></div>';
+                    }
+
+                    html += `<div id="restaurant-table-${t.id}" style="border:1px solid #ddd;border-radius:8px;padding:15px;width:280px;background:#fff;flex-shrink:0;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                            <div style="font-weight:600;">🍽️ ${escapeHtml(t.name)} <span style="color:#666;font-weight:normal;font-size:12px;">(${typeName})</span></div>
+                            <div style="font-size:11px;color:#999;">容量: ${t.capacity}座 | 已坐: ${tableAssignments.length}</div>
+                        </div>
+                        ${seatHtml}
+                        <div class="no-export" style="text-align:center;margin-top:8px;">
+                            <button class="btn btn-primary" style="padding:2px 8px;font-size:11px;" onclick="showRestaurantAssignModal(${t.id})">➕ 分配</button>
+                            <button class="btn btn-warning" style="padding:2px 8px;font-size:11px;" onclick="clearTableAssignments(${t.id})">清空</button>
+                            <button class="btn btn-danger" style="padding:2px 8px;font-size:11px;" onclick="deleteTable(${t.id})">🗑️</button>
+                        </div>
+                    </div>`;
+                }
+                html += '</div>';
+                document.getElementById(`restaurant-tables-${restaurantId}`).innerHTML = html;
+            } catch (e) {
+                console.error('加载桌位失败:', e);
+            }
+        }
+
+        function showRestaurantModal(editId) {
+            document.getElementById('restaurantModalTitle').textContent = editId ? '编辑餐厅' : '添加餐厅';
+            document.getElementById('editRestaurantId').value = editId || '';
+            document.getElementById('restaurantName').value = '';
+            document.getElementById('restaurantAddress').value = '';
+            document.getElementById('restaurantCapacity').value = '0';
+            document.getElementById('restaurantNote').value = '';
+            document.getElementById('restaurantModal').style.display = 'block';
+        }
+
+        function closeRestaurantModal() {
+            document.getElementById('restaurantModal').style.display = 'none';
+        }
+
+        async function saveRestaurant() {
+            const editId = document.getElementById('editRestaurantId').value;
+            const name = document.getElementById('restaurantName').value.trim();
+            if (!name) {
+                alert('请输入餐厅名称');
+                return;
+            }
+            const address = document.getElementById('restaurantAddress').value.trim();
+            const capacity = parseInt(document.getElementById('restaurantCapacity').value) || 0;
+            const note = document.getElementById('restaurantNote').value.trim();
+
+            try {
+                let resp;
+                if (editId) {
+                    resp = await fetch(`/api/restaurant/restaurants/${editId}`, {
+                        method: 'PUT',
+                        headers: {...getHeaders(), 'Content-Type': 'application/json'},
+                        body: JSON.stringify({name, address, capacity, note})
+                    });
+                } else {
+                    resp = await fetch(`/api/restaurant/${state.conferenceId}/restaurants`, {
+                        method: 'POST',
+                        headers: {...getHeaders(), 'Content-Type': 'application/json'},
+                        body: JSON.stringify({name, address, capacity, note})
+                    });
+                }
+                if (!resp.ok) throw new Error('保存失败');
+                closeRestaurantModal();
+                loadRestaurant();
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        async function deleteRestaurant(restaurantId) {
+            const confirmed = await showConfirm('确定要删除该餐厅吗？');
+            if (!confirmed) return;
+            try {
+                const resp = await fetch(`/api/restaurant/restaurants/${restaurantId}`, { headers: getHeaders(), method: 'DELETE'});
+                if (!resp.ok) throw new Error('删除失败');
+                loadRestaurant();
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        function updateTableNamePrefix() {
+            const type = document.getElementById('tableType').value;
+            const prefixMap = {'round': '包间', 'long': '长桌', 'hall': '大厅'};
+            document.getElementById('tableNamePrefix').value = prefixMap[type] || '桌位';
+        }
+
+        function showTableModal(restaurantId) {
+            document.getElementById('tableRestaurantId').value = restaurantId;
+            document.getElementById('tableType').value = 'round';
+            document.getElementById('tableCapacity').value = '10';
+            document.getElementById('tableQuantity').value = '1';
+            document.getElementById('tableNamePrefix').value = '包间';
+            document.getElementById('tableModal').style.display = 'block';
+        }
+
+        function closeTableModal() {
+            document.getElementById('tableModal').style.display = 'none';
+        }
+
+        async function saveTables() {
+            const restaurantId = parseInt(document.getElementById('tableRestaurantId').value);
+            const tableType = document.getElementById('tableType').value;
+            const capacity = parseInt(document.getElementById('tableCapacity').value) || 10;
+            const quantity = parseInt(document.getElementById('tableQuantity').value) || 1;
+            const namePrefix = document.getElementById('tableNamePrefix').value.trim() || '圆桌';
+
+            if (quantity < 1) {
+                alert('数量必须大于0');
+                return;
+            }
+
+            try {
+                const resp = await fetch(`/api/restaurant/${state.conferenceId}/tables/batch`, {
+                    method: 'POST',
+                    headers: {...getHeaders(), 'Content-Type': 'application/json'},
+                    body: JSON.stringify({restaurant_id: restaurantId, table_type: tableType, capacity_per_table: capacity, quantity, name_prefix: namePrefix})
+                });
+                if (!resp.ok) throw new Error('批量创建桌位失败');
+                closeTableModal();
+                loadRestaurant();
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        async function deleteTable(tableId) {
+            const confirmed = await showConfirm('确定要删除该桌位吗？');
+            if (!confirmed) return;
+            try {
+                const resp = await fetch(`/api/restaurant/tables/${tableId}`, { headers: getHeaders(), method: 'DELETE'});
+                if (!resp.ok) throw new Error('删除失败');
+                loadRestaurant();
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        async function clearTableAssignments(tableId) {
+            const confirmed = await showConfirm('确定要清空该桌位的所有分配吗？');
+            if (!confirmed) return;
+            try {
+                const resp = await fetch(`/api/restaurant/${state.conferenceId}/assignments/table/${tableId}`, { headers: getHeaders(), method: 'DELETE'});
+                if (!resp.ok) throw new Error('清空失败');
+                loadRestaurant();
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        let pendingSeatIndex = null;
+
+        async function clearRestaurantSeat(assignmentId, tableId) {
+            try {
+                const resp = await fetch(`/api/restaurant/assignments/${assignmentId}`, {
+                    method: 'DELETE',
+                    headers: getHeaders()
+                });
+                if (!resp.ok) throw new Error('取消分配失败');
+                loadRestaurant();
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        function showRestaurantAssignModal(tableId, seatIndex = null) {
+            document.getElementById('assignTableId').value = tableId;
+            document.getElementById('assignMealType').value = 'lunch';
+            pendingSeatIndex = seatIndex;
+            loadParticipantsForAssign();
+            document.getElementById('restaurantAssignModal').style.display = 'block';
+        }
+
+        function closeRestaurantAssignModal() {
+            document.getElementById('restaurantAssignModal').style.display = 'none';
+            pendingSeatIndex = null;
+        }
+
+        async function loadParticipantsForAssign() {
+            try {
+                const partResp = await fetch(`/api/participants/${state.conferenceId}`, { headers: getHeaders() });
+                const participants = await partResp.json();
+                
+                const mealParticipants = participants.filter(p => p.has_meal === true);
+
+                const assignResp = await fetch(`/api/restaurant/${state.conferenceId}/assignments`, { headers: getHeaders() });
+                const assignments = await assignResp.json();
+
+                const assignedIds = [...new Set(assignments.map(a => a.participant_id))];
+                const available = mealParticipants.filter(p => !assignedIds.includes(p.id));
+
+                const container = document.getElementById('participantCheckboxes');
+                if (available.length === 0) {
+                    container.innerHTML = '<div style="color:#999;text-align:center;padding:20px;">所有参会人已分配完毕</div>';
+                    return;
+                }
+
+                const isSingleSelect = pendingSeatIndex !== null;
+                const inputType = isSingleSelect ? 'radio' : 'checkbox';
+                const inputClass = isSingleSelect ? 'participant-radio' : 'participant-checkbox';
+                
+                let html = `<div style="margin-bottom:10px;color:#666;font-size:12px;">${isSingleSelect ? '请选择一位参会人分配到该座位：' : '请选择参会人（可多选）：'}</div>`;
+                html += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">';
+                for (const p of available) {
+                    html += `<label style="display:flex;align-items:center;gap:6px;padding:6px;border:1px solid #eee;border-radius:4px;cursor:pointer;">
+                        <input type="${inputType}" class="${inputClass}" name="participant-select" value="${p.id}" style="width:16px;height:16px;">
+                        <span style="font-size:13px;">${escapeHtml(p.name)}</span>
+                        <span style="font-size:11px;color:#999;">${escapeHtml(p.company || '')}</span>
+                    </label>`;
+                }
+                html += '</div>';
+                container.innerHTML = html;
+            } catch (e) {
+                console.error('加载参会人失败:', e);
+            }
+        }
+
+        async function saveAssignment() {
+            const tableId = parseInt(document.getElementById('assignTableId').value);
+            const mealType = document.getElementById('assignMealType').value;
+            
+            const isSingleSelect = pendingSeatIndex !== null;
+            let selectedParticipants = [];
+            
+            if (isSingleSelect) {
+                const radio = document.querySelector('.participant-radio:checked');
+                if (!radio) {
+                    alert('请选择参会人');
+                    return;
+                }
+                selectedParticipants = [parseInt(radio.value)];
+            } else {
+                const checkboxes = document.querySelectorAll('.participant-checkbox:checked');
+                if (checkboxes.length === 0) {
+                    alert('请选择参会人');
+                    return;
+                }
+                selectedParticipants = Array.from(checkboxes).map(cb => parseInt(cb.value));
+            }
+
+            if (isSingleSelect) {
+                const participantId = selectedParticipants[0];
+                try {
+                    const resp = await fetch(`/api/restaurant/${state.conferenceId}/assignments`, {
+                        method: 'POST',
+                        headers: {...getHeaders(), 'Content-Type': 'application/json'},
+                        body: JSON.stringify({table_id: tableId, seat_index: pendingSeatIndex, participant_id: participantId, meal_type: mealType})
+                    });
+                    if (!resp.ok) throw new Error('分配失败');
+                } catch (e) {
+                    alert(e.message);
+                    return;
+                }
+                closeRestaurantAssignModal();
+                loadRestaurant();
+                return;
+            }
+
+            let successCount = 0;
+            let failCount = 0;
+            for (const participantId of selectedParticipants) {
+                try {
+                    const resp = await fetch(`/api/restaurant/${state.conferenceId}/assignments`, {
+                        method: 'POST',
+                        headers: {...getHeaders(), 'Content-Type': 'application/json'},
+                        body: JSON.stringify({table_id: tableId, participant_id: participantId, meal_type: mealType})
+                    });
+                    if (resp.ok) {
+                        successCount++;
+                    } else {
+                        failCount++;
+                    }
+                } catch (e) {
+                    failCount++;
+                }
+            }
+
+            closeRestaurantAssignModal();
+            loadRestaurant();
+        }
+
+        let restaurantDragState = { tableId: null, seatIndex: null, participantId: null, assignmentId: null };
+
+        function handleRestaurantDragStart(e) {
+            const seat = e.target.closest('.restaurant-seat');
+            if (!seat || !seat.classList.contains('occupied')) {
+                e.preventDefault();
+                return;
+            }
+            restaurantDragState = {
+                tableId: parseInt(seat.dataset.tableId),
+                seatIndex: parseInt(seat.dataset.seatIndex),
+                participantId: parseInt(seat.dataset.participantId),
+                assignmentId: parseInt(seat.dataset.assignmentId)
+            };
+            e.dataTransfer.effectAllowed = 'move';
+            e.target.style.opacity = '0.5';
+        }
+
+        function handleRestaurantDragOver(e) {
+            const seat = e.target.closest('.restaurant-seat');
+            if (!seat) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            const isOccupied = seat.classList.contains('occupied');
+            seat.style.background = isOccupied ? '#3a7bc8' : '#e3f2fd';
+            seat.style.borderColor = '#4a90d9';
+        }
+
+        function handleRestaurantDragLeave(e) {
+            const seat = e.target.closest('.restaurant-seat');
+            if (seat) {
+                const isOccupied = seat.classList.contains('occupied');
+                seat.style.background = isOccupied ? '#4a90d9' : '#fff';
+                seat.style.borderColor = isOccupied ? '#3a7bc8' : '#ddd';
+            }
+        }
+
+        async function handleRestaurantDrop(e) {
+            e.preventDefault();
+            const targetSeat = e.target.closest('.restaurant-seat');
+            if (!targetSeat || !restaurantDragState.participantId) return;
+
+            const targetTableId = parseInt(targetSeat.dataset.tableId);
+            const targetAssignmentId = targetSeat.dataset.assignmentId ? parseInt(targetSeat.dataset.assignmentId) : null;
+
+            if (targetAssignmentId === restaurantDragState.assignmentId) {
+                return;
+            }
+
+            const sourceTableId = restaurantDragState.tableId;
+
+            try {
+                let resp;
+                if (targetAssignmentId) {
+                    resp = await fetch(`/api/restaurant/${state.conferenceId}/assignments/swap`, {
+                        method: 'POST',
+                        headers: {...getHeaders(), 'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            source_assignment_id: restaurantDragState.assignmentId,
+                            target_assignment_id: targetAssignmentId
+                        })
+                    });
+                } else {
+                    resp = await fetch(`/api/restaurant/${state.conferenceId}/assignments/move`, {
+                        method: 'POST',
+                        headers: {...getHeaders(), 'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            assignment_id: restaurantDragState.assignmentId,
+                            target_table_id: targetTableId,
+                            target_seat_index: parseInt(targetSeat.dataset.seatIndex)
+                        })
+                    });
+                }
+
+                if (resp.ok) {
+                    await loadRestaurantTablesForIds([sourceTableId, targetTableId]);
+                } else {
+                    const err = await resp.json();
+                    alert(err.detail || '操作失败');
+                    loadRestaurant();
+                }
+            } catch (e) {
+                console.error('操作失败:', e);
+                alert('操作失败');
+                loadRestaurant();
+            }
+        }
+
+        async function loadRestaurantTablesForIds(tableIds) {
+            const uniqueIds = [...new Set(tableIds)];
+            const assignResp = await fetch(`/api/restaurant/${state.conferenceId}/assignments`, { headers: getHeaders() });
+            const assignments = await assignResp.json();
+            const partResp = await fetch(`/api/participants/${state.conferenceId}`, { headers: getHeaders() });
+            const participants = await partResp.json();
+
+            for (const tableId of uniqueIds) {
+                const tableEl = document.getElementById(`restaurant-table-${tableId}`);
+                if (!tableEl) continue;
+
+                const tableAssignments = assignments.filter(a => a.table_id === tableId);
+                let seatHtml = '';
+
+                const resp = await fetch(`/api/restaurant/${state.conferenceId}/tables?restaurant_id=0`, { headers: getHeaders() });
+                let t = null;
+                let originalTableName = '桌子';
+                let tableType = '大厅';
+                if (resp.ok) {
+                    const allTables = await resp.json();
+                    t = allTables.find(tt => tt.id === tableId);
+                    if (t) {
+                        originalTableName = t.name || '桌子';
+                        tableType = t.table_type === 'round' ? '包间' : (t.table_type === 'room' ? '包间' : (t.table_type === 'long' ? '长桌' : '大厅'));
+                    }
+                }
+
+                const capacity = t ? t.capacity : (tableAssignments.length > 0 ? Math.max(...tableAssignments.map(a => a.seat_index)) + 1 : 0);
+
+                if (t && (t.table_type === 'round' || t.table_type === 'hall')) {
+                    const containerSize = 240;
+                    const tableDiameter = 100;
+                    const tableRadius = tableDiameter / 2;
+                    const seatRadius = 85;
+                    const seatSize = 44;
+                    const center = containerSize / 2;
+
+                    seatHtml = `<div style="position:relative;width:${containerSize}px;height:${containerSize}px;margin:0 auto;">`;
+                    seatHtml += `<div style="position:absolute;left:${center - tableRadius}px;top:${center - tableRadius}px;width:${tableDiameter}px;height:${tableDiameter}px;background:#f8f8f8;border:4px solid #888;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.15);display:flex;align-items:center;justify-content:center;font-size:12px;color:#555;font-weight:500;">${escapeHtml(t.name)}</div>`;
+
+                    for (let i = 0; i < capacity; i++) {
+                        const angle = (360 / capacity) * i - 90;
+                        const rad = angle * Math.PI / 180;
+                        const x = center + seatRadius * Math.cos(rad) - seatSize / 2;
+                        const y = center + seatRadius * Math.sin(rad) - seatSize / 2;
+                        const seatAssignment = tableAssignments.find(a => a.seat_index === i);
+                        const p = seatAssignment ? participants.find(pp => pp.id === seatAssignment.participant_id) : null;
+                        const isAssigned = !!p;
+                        const bgColor = isAssigned ? '#4a90d9' : '#fff';
+                        const textColor = isAssigned ? '#fff' : '#666';
+                        const borderColor = isAssigned ? '#3a7bc8' : '#ddd';
+                        const assignmentId = seatAssignment ? seatAssignment.id : '';
+                        const detailSize = state.showRestaurantDetail ? 55 : seatSize;
+                        seatHtml += `<div class="restaurant-seat ${isAssigned ? 'occupied' : 'empty'}"
+                            data-table-id="${tableId}"
+                            data-seat-index="${i}"
+                            data-assignment-id="${assignmentId}"
+                            data-participant-id="${isAssigned ? p.id : ''}"
+                            ${isAssigned ? 'draggable="true"' : ''}
+                            ondragstart="handleRestaurantDragStart(event)"
+                            ondragover="handleRestaurantDragOver(event)"
+                            ondrop="handleRestaurantDrop(event)"
+                            ondragend="handleRestaurantDragEnd(event)"
+                            style="position:absolute;left:${x}px;top:${y}px;width:${detailSize}px;height:${detailSize}px;background:${bgColor};border:2px solid ${borderColor};border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;color:${textColor};cursor:${isAssigned ? 'grab' : 'pointer'};box-shadow:${isAssigned ? '0 2px 4px rgba(74,144,217,0.4)' : '0 1px 3px rgba(0,0,0,0.1)'};"
+                            onclick="${isAssigned ? '' : `showRestaurantAssignModal(${tableId}, ${i})`}"
+                            title="${isAssigned ? escapeHtml(p.name) : '点击分配'}">
+                            ${getRestaurantSeatContent(p, i, isAssigned)}
+                        </div>`;
+                    }
+                    seatHtml += '</div>';
+                } else {
+                    seatHtml = `<div style="position:relative;width:160px;min-height:100px;margin:0 auto;text-align:center;">`;
+                    seatHtml += `<div style="width:140px;height:50px;background:#f5f5f5;border:3px solid #999;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;color:#666;margin-top:25px;">${originalTableName || '桌子'}</div>`;
+                    seatHtml += `<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:3px;margin-top:10px;max-width:160px;">`;
+                    for (let i = 0; i < capacity; i++) {
+                        const seatAssignment = tableAssignments.find(a => a.seat_index === i);
+                        const p = seatAssignment ? participants.find(pp => pp.id === seatAssignment.participant_id) : null;
+                        const isAssigned = !!p;
+                        const assignmentId = seatAssignment ? seatAssignment.id : '';
+                        const detailWidth = state.showRestaurantDetail ? 45 : 35;
+                        const detailHeight = state.showRestaurantDetail ? 35 : 26;
+                        seatHtml += `<div class="restaurant-seat ${isAssigned ? 'occupied' : 'empty'}"
+                            data-table-id="${tableId}" data-seat-index="${i}" data-assignment-id="${assignmentId}"
+                            data-participant-id="${isAssigned ? p.id : ''}"
+                            ${isAssigned ? 'draggable="true"' : ''}
+                            ondragstart="handleRestaurantDragStart(event)" ondragover="handleRestaurantDragOver(event)"
+                            ondrop="handleRestaurantDrop(event)" ondragend="handleRestaurantDragEnd(event)"
+                            style="width:${detailWidth}px;height:${detailHeight}px;background:${isAssigned ? '#4a90d9' : '#fff'};border:2px solid ${isAssigned ? '#3a7bc8' : '#ddd'};border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;color:${isAssigned ? '#fff' : '#666'};cursor:${isAssigned ? 'grab' : 'pointer'};"
+                            onclick="${isAssigned ? '' : `showRestaurantAssignModal(${tableId}, ${i})`}">${getRestaurantSeatContentShort(p, i, isAssigned)}</div>`;
+                    }
+                    seatHtml += '</div></div>';
+                }
+
+                tableEl.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                        <div style="font-weight:600;">🍽️ ${originalTableName || '桌子'} <span style="color:#666;font-weight:normal;font-size:12px;">(${tableType || '大厅'})</span></div>
+                        <div style="font-size:11px;color:#999;">容量: ${capacity}座 | 已坐: ${tableAssignments.length}</div>
+                    </div>
+                    ${seatHtml}
+                    <div style="text-align:center;margin-top:8px;">
+                        <button class="btn btn-primary" style="padding:2px 8px;font-size:11px;" onclick="showRestaurantAssignModal(${tableId})">➕ 分配</button>
+                        <button class="btn btn-warning" style="padding:2px 8px;font-size:11px;" onclick="clearTableAssignments(${tableId})">清空</button>
+                        <button class="btn btn-danger" style="padding:2px 8px;font-size:11px;" onclick="deleteTable(${tableId})">🗑️</button>
+                    </div>`;
+            }
+        }
+
+        function handleRestaurantDragEnd(e) {
+            e.target.style.opacity = '1';
+            document.querySelectorAll('.restaurant-seat').forEach(s => {
+                if (s.classList.contains('occupied')) {
+                    s.style.background = '#4a90d9';
+                    s.style.borderColor = '#3a7bc8';
+                } else {
+                    s.style.background = '#fff';
+                    s.style.borderColor = '#ddd';
+                }
+            });
+            restaurantDragState = { tableId: null, seatIndex: null, participantId: null, assignmentId: null };
+        }
+
+        async function exportRestaurantPDF() {
+            const restaurantList = document.getElementById('restaurantList');
+            if (!restaurantList || restaurantList.children.length === 0) {
+                alert('暂无餐厅数据可导出');
+                return;
+            }
+
+            const unassignedCount = parseInt(document.getElementById('restaurantUnassignedCount').textContent) || 0;
+            if (unassignedCount > 0) {
+                alert(`还有 ${unassignedCount} 位参会人待分配餐厅，请先完成餐厅分配后再导出。`);
+                return;
+            }
+
+            try {
+                const noExportElements = restaurantList.querySelectorAll('.no-export');
+                noExportElements.forEach(el => el.style.display = 'none');
+
+                const script1 = document.createElement('script');
+                script1.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+                document.head.appendChild(script1);
+                await new Promise(resolve => script1.onload = resolve);
+
+                const script2 = document.createElement('script');
+                script2.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+                document.head.appendChild(script2);
+                await new Promise(resolve => script2.onload = resolve);
+
+                const { jsPDF } = window.jspdf;
+
+                const htmlCanvas = await html2canvas(restaurantList, {scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false});
+                
+                noExportElements.forEach(el => el.style.display = '');
+
+                const imgData = htmlCanvas.toDataURL('image/png');
+                const pdf = new jsPDF('landscape', 'mm', 'a4');
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                const imgWidth = pageWidth - 20;
+                const imgHeight = (htmlCanvas.height * imgWidth) / htmlCanvas.width;
+                pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, Math.min(imgHeight, pageHeight - 20));
+                pdf.save(`餐厅安排_${new Date().toLocaleDateString()}.pdf`);
+            } catch (e) {
+                console.error(e);
+                const noExportElements = restaurantList.querySelectorAll('.no-export');
+                noExportElements.forEach(el => el.style.display = '');
+                alert('导出PDF失败: ' + e.message);
+            }
+        }
+
+        async function exportHotelPDF() {
+            const hotelList = document.getElementById('hotelList');
+            if (!hotelList || hotelList.children.length === 0) {
+                alert('暂无住宿数据可导出');
+                return;
+            }
+
+            const unassignedCount = parseInt(document.getElementById('hotelUnassignedCount').textContent) || 0;
+            if (unassignedCount > 0) {
+                alert(`还有 ${unassignedCount} 位参会人待分配住宿，请先完成住宿分配后再导出。`);
+                return;
+            }
+
+            try {
+                const script1 = document.createElement('script');
+                script1.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+                document.head.appendChild(script1);
+                await new Promise(resolve => script1.onload = resolve);
+
+                const script2 = document.createElement('script');
+                script2.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+                document.head.appendChild(script2);
+                await new Promise(resolve => script2.onload = resolve);
+
+                const { jsPDF } = window.jspdf;
+
+                const resp = await fetch(`/api/hotel/${state.conferenceId}/summary`, { headers: getHeaders() });
+                const data = await resp.json();
+
+                let html = `<div style="font-family:Arial,sans-serif;padding:20px;background:#fff;color:#333;">
+                    <h2 style="text-align:center;margin-bottom:20px;">🏨 住宿安排表</h2>
+                    <p style="text-align:center;color:#666;">统计: 酒店 ${data.hotels?.length || 0} 家 | 房间 ${data.total_rooms || 0} 个 | 已入住 ${data.total_assigned || 0} 个</p>`;
+
+                for (const h of (data.hotels || [])) {
+                    html += `<div style="margin-bottom:20px;border:1px solid #ddd;padding:15px;border-radius:8px;">
+                        <h3 style="margin:0 0 10px 0;">🏨 ${escapeHtml(h.hotel_name)}</h3>
+                        <p style="margin:0 0 10px 0;color:#666;font-size:12px;">房间数: ${h.room_count} | 已入住: ${h.occupied} | 可用: ${h.available}</p>
+                        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                            <tr style="background:#f5f5f5;">
+                                <th style="border:1px solid #ddd;padding:6px;text-align:left;">房号</th>
+                                <th style="border:1px solid #ddd;padding:6px;text-align:left;">房型</th>
+                                <th style="border:1px solid #ddd;padding:6px;text-align:left;">入住人</th>
+                                <th style="border:1px solid #ddd;padding:6px;text-align:left;">单位</th>
+                                <th style="border:1px solid #ddd;padding:6px;text-align:left;">职位</th>
+                            </tr>`;
+
+                    const roomsResp = await fetch(`/api/hotel/${state.conferenceId}/rooms?hotel_id=${h.hotel_id}`, { headers: getHeaders() });
+                    const rooms = await roomsResp.json();
+                    const assignResp = await fetch(`/api/hotel/${state.conferenceId}/assignments`, { headers: getHeaders() });
+                    const assignments = await assignResp.json();
+                    const partResp = await fetch(`/api/participants/${state.conferenceId}`, { headers: getHeaders() });
+                    const participants = await partResp.json();
+
+                    for (const r of rooms) {
+                        const roomAssignments = assignments.filter(a => a.room_id === r.id);
+                        const roomTypeName = r.room_type === 'single' ? '单人间' : (r.room_type === 'double' ? '双人间' : '套房');
+                        const maxOccupancy = r.room_type === 'double' ? 2 : (r.room_type === 'suite' ? 4 : 1);
+                        
+                        if (roomAssignments.length === 0) {
+                            html += `<tr>
+                                <td style="border:1px solid #ddd;padding:6px;">${escapeHtml(r.room_number)}</td>
+                                <td style="border:1px solid #ddd;padding:6px;">${roomTypeName}</td>
+                                <td style="border:1px solid #ddd;padding:6px;color:#999;">-</td>
+                                <td style="border:1px solid #ddd;padding:6px;color:#999;">-</td>
+                                <td style="border:1px solid #ddd;padding:6px;color:#999;">-</td>
+                            </tr>`;
+                        } else {
+                            const rowspan = roomAssignments.length;
+                            roomAssignments.forEach((a, idx) => {
+                                const p = participants.find(p => p.id === a.participant_id);
+                                const name = p ? p.name : '-';
+                                const company = p ? (p.company || '-') : '-';
+                                const position = p ? (p.position || '-') : '-';
+                                const roomNumCell = idx === 0 ? `<td rowspan="${rowspan}" style="border:1px solid #ddd;padding:6px;vertical-align:middle;">${escapeHtml(r.room_number)}</td>` : '';
+                                const roomTypeCell = idx === 0 ? `<td rowspan="${rowspan}" style="border:1px solid #ddd;padding:6px;vertical-align:middle;">${roomTypeName}</td>` : '';
+                                html += `<tr>
+                                    ${roomNumCell}
+                                    ${roomTypeCell}
+                                    <td style="border:1px solid #ddd;padding:6px;">${escapeHtml(name)}</td>
+                                    <td style="border:1px solid #ddd;padding:6px;">${escapeHtml(company)}</td>
+                                    <td style="border:1px solid #ddd;padding:6px;">${escapeHtml(position)}</td>
+                                </tr>`;
+                            });
+                        }
+                    }
+                    html += '</table></div>';
+                }
+                html += '</div>';
+
+                const printArea = document.createElement('div');
+                printArea.style.cssText = 'position:absolute;left:-9999px;top:0;background:#fff;width:800px;';
+                printArea.innerHTML = html;
+                document.body.appendChild(printArea);
+
+                const htmlCanvas = await html2canvas(printArea, {scale: 2, useCORS: true, backgroundColor: '#ffffff'});
+                const imgData = htmlCanvas.toDataURL('image/png');
+                const pdf = new jsPDF('portrait', 'mm', 'a4');
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                const imgWidth = pageWidth - 10;
+                const imgHeight = (htmlCanvas.height * imgWidth) / htmlCanvas.width;
+                const pages = Math.ceil(imgHeight / (pageHeight - 10));
+
+                for (let i = 0; i < pages; i++) {
+                    if (i > 0) pdf.addPage();
+                    const yOffset = -i * (pageHeight - 10);
+                    pdf.addImage(imgData, 'PNG', 5, yOffset + 10, imgWidth, imgHeight);
+                }
+
+                pdf.save(`住宿安排_${new Date().toLocaleDateString()}.pdf`);
+                document.body.removeChild(printArea);
+            } catch (e) {
+                console.error(e);
+                alert('导出PDF失败: ' + e.message);
+            }
+        }
+
+        async function exportToPDF() {
+            const canvas = document.getElementById('seatingCanvas');
+            if (!canvas) {
+                alert('无法找到座位画布');
+                return;
+            }
+
+            const attendingParticipants = (state.participants || []).filter(p => p.is_attending !== false).length;
+            const assignedCount = parseInt(document.getElementById('seatingAssignedCount').textContent) || 0;
+            const unassignedCount = attendingParticipants - assignedCount;
+            
+            if (unassignedCount > 0) {
+                alert(`还有 ${unassignedCount} 位参会人待分配座位，请先完成座位分配后再导出。`);
+                return;
+            }
+
+            try {
+                const noExportElements = canvas.querySelectorAll('.no-export');
+                noExportElements.forEach(el => el.style.display = 'none');
+
+                const script1 = document.createElement('script');
+                script1.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+                document.head.appendChild(script1);
+                await new Promise(resolve => script1.onload = resolve);
+
+                const script2 = document.createElement('script');
+                script2.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+                document.head.appendChild(script2);
+                await new Promise(resolve => script2.onload = resolve);
+
+                const { jsPDF } = window.jspdf;
+                const htmlCanvas = await html2canvas(canvas, {scale: 2, useCORS: true, backgroundColor: '#ffffff'});
+                
+                noExportElements.forEach(el => el.style.display = '');
+
+                const imgData = htmlCanvas.toDataURL('image/png');
+                const pdf = new jsPDF('landscape', 'mm', 'a4');
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                const imgWidth = pageWidth - 20;
+                const imgHeight = (htmlCanvas.height * imgWidth) / htmlCanvas.width;
+                pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, Math.min(imgHeight, pageHeight - 20));
+                pdf.save(`座位布局_${new Date().toLocaleDateString()}.pdf`);
+            } catch (e) {
+                console.error(e);
+                const noExportElements = canvas.querySelectorAll('.no-export');
+                noExportElements.forEach(el => el.style.display = '');
+                alert('导出PDF失败: ' + e.message);
+            }
+        }
+
+        let pendingAssignSeat = null;
+        let pendingAssignArea = null;
+
+        async function showAssignModal(areaId, seatNumber) {
+            const participantsResp = await fetch(`/api/participants/${state.conferenceId}`, { headers: getHeaders() });
+            const participants = await participantsResp.json();
+            const assignResp = await fetch(`/api/seating/${state.conferenceId}/assignments`, { headers: getHeaders() });
+            const assignData = await assignResp.json();
+            const assignments = assignData.assignments || [];
+            const assignedIds = assignments.map(a => a.participant_id);
+            const attendingParticipants = participants.filter(p => p.is_attending !== false);
+            const available = attendingParticipants.filter(p => !assignedIds.includes(p.id));
+
+            if (available.length === 0) {
+                alert('所有参会人已分配完毕');
+                return;
+            }
+
+            let html = '<div style="max-height:300px;overflow-y:auto;">';
+            available.forEach(p => {
+                html += `<div style="padding:8px;border-bottom:1px solid #eee;cursor:pointer;" onclick="assignSeat(${p.id})">${escapeHtml(p.name)} - ${escapeHtml(p.company || '')}</div>`;
+            });
+            html += '</div>';
+
+            const modal = document.createElement('div');
+            modal.id = 'assignModal';
+            modal.className = 'modal active';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width:400px;">
+                    <div class="modal-header">
+                        <h3>分配座位给</h3>
+                        <button class="modal-close" onclick="closeAssignModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">${html}</div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            pendingAssignSeat = seatNumber;
+            pendingAssignArea = areaId;
+        }
+
+        function closeAssignModal() {
+            const modal = document.getElementById('assignModal');
+            if (modal) modal.remove();
+            pendingAssignSeat = null;
+            pendingAssignArea = null;
+        }
+
+        async function assignSeat(participantId) {
+            try {
+                const resp = await fetch(`/api/seating/${state.conferenceId}/assignments`, {
+                    method: 'POST',
+                    headers: {...getHeaders(), 'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        area_id: pendingAssignArea,
+                        participant_id: participantId,
+                        seat_number: pendingAssignSeat
+                    })
+                });
+                if (!resp.ok) throw new Error('分配失败');
+                closeAssignModal();
+                loadSeating();
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        async function unassignSeat(assignmentId) {
+            try {
+                const resp = await fetch(`/api/seating/assignments/${assignmentId}`, { headers: getHeaders(), method: 'DELETE'});
+                if (!resp.ok) throw new Error('操作失败');
+                loadSeating();
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        init();
+    </script>
+
+    <div class="toast" id="toast"></div>
+    
+    <div class="confirm-modal" id="confirmModal">
+        <div class="confirm-content">
+            <div class="confirm-message" id="confirmMessage"></div>
+            <div class="confirm-buttons">
+                <button class="confirm-btn cancel" id="confirmCancel">取消</button>
+                <button class="confirm-btn ok" id="confirmOk">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        function showConfirm(message) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('confirmModal');
+                const msgEl = document.getElementById('confirmMessage');
+                const okBtn = document.getElementById('confirmOk');
+                const cancelBtn = document.getElementById('confirmCancel');
+                
+                msgEl.textContent = message;
+                modal.classList.add('active');
+                
+                const handleOk = () => {
+                    modal.classList.remove('active');
+                    okBtn.removeEventListener('click', handleOk);
+                    cancelBtn.removeEventListener('click', handleCancel);
+                    resolve(true);
+                };
+                
+                const handleCancel = () => {
+                    modal.classList.remove('active');
+                    okBtn.removeEventListener('click', handleOk);
+                    cancelBtn.removeEventListener('click', handleCancel);
+                    resolve(false);
+                };
+                
+                okBtn.addEventListener('click', handleOk);
+                cancelBtn.addEventListener('click', handleCancel);
+            });
+        }
+    </script>
+</body>
+</html>

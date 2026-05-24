@@ -1,0 +1,2094 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>接送管理</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary: #6366f1;
+            --primary-light: #e0e7ff;
+            --scheduled: #3b82f6;
+            --in-progress: #10b981;
+            --arrived: #f59e0b;
+            --completed: #9ca3af;
+            --cancelled: #ef4444;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+            font-size: 14px;
+            color: var(--gray-800);
+            background: var(--gray-100);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        #app {
+            max-width: 100%;
+            min-height: 100vh;
+            background: #fff;
+            padding-bottom: 80px;
+        }
+
+        .hidden { display: none !important; }
+
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            height: 50px;
+            background: #fff;
+            border-bottom: 1px solid var(--gray-200);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+        }
+
+        .header-title { font-size: 16px; font-weight: 600; }
+
+        .date-nav {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #currentDate { font-size: 14px; min-width: 40px; text-align: center; }
+
+        .tabs {
+            display: flex;
+            background: #fff;
+            border-bottom: 1px solid var(--gray-200);
+            overflow-x: auto;
+            padding: 8px;
+            gap: 8px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            min-width: 90px;
+            padding: 12px 8px;
+            border: 1px solid var(--gray-200);
+            background: #fff;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--gray-500);
+            cursor: pointer;
+            border-radius: 6px;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        .timeline-wrapper {
+            position: relative;
+            height: calc(100vh - 200px);
+            overflow: hidden;
+        }
+
+        .timeline-corner {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 50px;
+            height: 60px;
+            padding: 8px;
+            font-size: 11px;
+            color: var(--gray-500);
+            background: var(--gray-50);
+            border-right: 1px solid var(--gray-200);
+            border-bottom: 1px solid var(--gray-200);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .timeline-header-scroll {
+            position: absolute;
+            top: 0;
+            left: 50px;
+            right: 0;
+            height: 60px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            background: var(--gray-50);
+            border-bottom: 1px solid var(--gray-200);
+            z-index: 90;
+        }
+
+        .timeline-header-scroll::-webkit-scrollbar { display: none; }
+
+        .vehicles-row {
+            display: flex;
+            min-width: fit-content;
+            height: 100%;
+        }
+
+        .vehicle-col-header {
+            min-width: 110px;
+            width: 110px;
+            padding: 6px 8px;
+            text-align: center;
+            border-right: 1px solid var(--gray-200);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .v-plate { font-size: 13px; font-weight: 600; color: var(--gray-800); }
+        .v-info { font-size: 10px; color: var(--gray-500); margin-top: 2px; }
+        .v-driver { font-size: 10px; color: var(--gray-400); margin-top: 1px; }
+
+        .timeline-time-scroll {
+            position: absolute;
+            top: 60px;
+            left: 0;
+            width: 50px;
+            bottom: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            background: var(--gray-50);
+            border-right: 1px solid var(--gray-200);
+            z-index: 80;
+        }
+
+        .timeline-time-scroll::-webkit-scrollbar { display: none; }
+
+        .timeline-schedule-scroll {
+            position: absolute;
+            top: 60px;
+            left: 50px;
+            right: 0;
+            bottom: 0;
+            overflow: auto;
+            z-index: 70;
+        }
+
+        .timeline-content {
+            position: relative;
+            min-height: 100%;
+        }
+
+        .timeline-row {
+            display: flex;
+            min-height: 55px;
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        .time-cell {
+            width: 50px;
+            min-width: 50px;
+            padding: 8px;
+            font-size: 11px;
+            color: var(--gray-500);
+            background: var(--gray-50);
+            border-bottom: 1px solid var(--gray-100);
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+
+        .vehicle-cells {
+            display: flex;
+            min-width: fit-content;
+        }
+
+        .task-cell {
+            min-width: 110px;
+            width: 110px;
+            padding: 4px;
+            border-right: 1px solid var(--gray-100);
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+
+        .task-cell.empty { background: #fff; }
+        .task-cell.empty:hover { background: var(--gray-50); }
+        .task-cell.occupied { background: transparent; pointer-events: none; }
+
+        .task-block-floating {
+            position: absolute;
+            width: 106px;
+            margin-left: 2px;
+            border-radius: 6px;
+            cursor: pointer;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+
+        .task-block-floating.scheduled { background: var(--scheduled); color: #fff; }
+        .task-block-floating.in_progress { background: var(--in-progress); color: #fff; }
+        .task-block-floating.arrived { background: var(--arrived); color: #fff; }
+        .task-block-floating.completed { background: var(--completed); color: #fff; }
+        .task-block-floating.cancelled { background: var(--cancelled); color: #fff; opacity: 0.6; }
+
+        .block-content {
+            padding: 6px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .block-names { font-size: 12px; font-weight: 600; }
+        .block-type { font-size: 10px; opacity: 0.9; margin-top: 2px; }
+        .block-time { font-size: 9px; opacity: 0.8; margin-top: 2px; }
+        .block-dest { font-size: 9px; opacity: 0.8; margin-top: 1px; }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            padding: 10px;
+            background: var(--gray-50);
+            border-top: 1px solid var(--gray-200);
+            font-size: 11px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item { display: flex; align-items: center; gap: 4px; }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+        }
+
+        .dot.scheduled { background: var(--scheduled); }
+        .dot.in-progress { background: var(--in-progress); }
+        .dot.arrived { background: var(--arrived); }
+        .dot.completed { background: var(--completed); }
+        .dot.cancelled { background: var(--cancelled); }
+
+        .list-container { padding: 12px; }
+
+        .list-item {
+            display: flex;
+            align-items: center;
+            padding: 14px;
+            background: #fff;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .item-main { flex: 1; min-width: 0; }
+        .item-title { font-size: 14px; font-weight: 600; color: var(--gray-800); }
+        .item-sub { font-size: 12px; color: var(--gray-500); margin-top: 4px; }
+        
+        .bind-status { 
+            display: inline-block;
+            padding: 2px 8px; 
+            border-radius: 4px; 
+            font-size: 11px; 
+        }
+        .bind-status.binded { background: #dcfce7; color: #166534; }
+        .bind-status.unbinded { background: #fef3c7; color: #92400e; }
+
+        .item-actions { display: flex; gap: 8px; }
+
+        .btn-icon {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: var(--gray-100);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: #fff;
+            color: var(--gray-700);
+            border: 1px solid var(--gray-300);
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .btn-primary:hover {
+            background: var(--gray-50);
+            border-color: var(--gray-400);
+        }
+
+        .btn-secondary {
+            background: var(--gray-100);
+            color: var(--gray-700);
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .btn-danger {
+            background: var(--cancelled);
+            color: #fff;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .btn-block {
+            width: calc(100% - 24px);
+            margin: 12px auto;
+            display: block;
+        }
+
+        .btn-close {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: var(--gray-100);
+            border-radius: 50%;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .status-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 12px 16px;
+            border-top: 1px solid var(--gray-200);
+            background: var(--gray-50);
+        }
+
+        .pushed-info {
+            width: 100%;
+            text-align: center;
+            color: #22c55e;
+            font-size: 14px;
+            padding: 8px 0;
+        }
+
+        .btn-status {
+            flex: 1;
+            min-width: 100px;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .btn-status.start { background: var(--in-progress); color: #fff; }
+        .btn-status.arrive { background: var(--arrived); color: #fff; }
+        .btn-status.complete { background: var(--completed); color: #fff; }
+
+        .fab {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            background: #fff;
+            color: var(--gray-700);
+            border: 1px solid var(--gray-300);
+            border-radius: 50%;
+            font-size: 28px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+            z-index: 80;
+        }
+
+        .fab:hover {
+            background: var(--gray-50);
+            border-color: var(--gray-400);
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 200;
+            display: none;
+        }
+
+        .modal.active { display: flex; align-items: flex-end; justify-content: center; }
+
+        .modal-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            position: relative;
+            background: #fff;
+            width: 100%;
+            max-height: 90vh;
+            border-radius: 16px 16px 0 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            animation: slideUp 0.2s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .modal-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--gray-200);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 { font-size: 16px; font-weight: 600; }
+
+        .modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .modal-footer {
+            padding: 12px 16px;
+            border-top: 1px solid var(--gray-200);
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .form-group { margin-bottom: 16px; }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--gray-700);
+            margin-bottom: 6px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .form-row > * { flex: 1; }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            font-size: 14px;
+            background: #fff;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        input[type="date"]::before,
+        input[type="time"]::before {
+            content: attr(placeholder);
+            color: var(--gray-400);
+        }
+
+        input[type="date"]:valid::before,
+        input[type="time"]:valid::before {
+            display: none;
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator,
+        input[type="time"]::-webkit-calendar-picker-indicator {
+            opacity: 0.6;
+        }
+
+        select.form-select {
+            color: var(--gray-800);
+        }
+
+        select.form-select.placeholder {
+            color: var(--gray-400);
+        }
+
+        select.form-select option {
+            color: var(--gray-800);
+        }
+
+        .time-range-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .time-range-row .form-input { flex: 1; }
+        .time-range-row span { color: var(--gray-400); font-size: 12px; }
+
+        .location-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .location-row .form-input { flex: 1; }
+        .location-row span { color: var(--gray-400); }
+
+        .escort-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .escort-row .form-input { flex: 1; }
+
+        .radio-label {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 12px;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .radio-label:has(input:checked) {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .radio-label input { display: none; }
+
+        .person-selector-header {
+            margin-bottom: 8px;
+        }
+
+        .person-selector-header span {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--gray-700);
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .company-select {
+            width: 100%;
+            padding: 10px 12px;
+            font-size: 14px;
+        }
+
+        .person-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            max-height: 120px;
+            overflow-y: auto;
+            padding: 4px;
+        }
+
+        .person-tag {
+            display: flex;
+            flex-direction: column;
+            padding: 6px 10px;
+            background: var(--gray-100);
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            min-width: 80px;
+        }
+
+        .person-tag.selected {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .p-name { font-size: 13px; font-weight: 500; }
+        .p-company { font-size: 10px; color: var(--gray-500); }
+
+        .selection-info {
+            font-size: 12px;
+            color: var(--gray-500);
+            margin-top: 8px;
+            padding: 0 4px;
+        }
+
+        .detail-section { margin-bottom: 16px; }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--gray-500);
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+        }
+
+        .detail-row .label { font-size: 13px; color: var(--gray-600); }
+        .detail-row .value { font-size: 13px; color: var(--gray-800); font-weight: 500; }
+
+        .person-detail {
+            padding: 12px;
+            background: var(--gray-50);
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .pd-name { font-size: 14px; font-weight: 600; }
+        .pd-info { font-size: 12px; color: var(--gray-500); margin-top: 2px; }
+        .pd-phone { font-size: 12px; color: var(--gray-600); margin-top: 4px; }
+
+        .toast {
+            position: fixed;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--gray-800);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            z-index: 300;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .toast.show { opacity: 1; }
+
+        .confirm-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .confirm-modal.active {
+            display: flex;
+        }
+
+        .confirm-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            width: 280px;
+            text-align: center;
+        }
+
+        .confirm-message {
+            font-size: 15px;
+            color: #333;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .confirm-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .confirm-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .confirm-btn.cancel {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .confirm-btn.ok {
+            background: #5c9ce6;
+            color: white;
+        }
+
+        .confirm-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .confirm-modal.active {
+            display: flex;
+        }
+
+        .confirm-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            width: 280px;
+            text-align: center;
+        }
+
+        .confirm-message {
+            font-size: 15px;
+            color: #333;
+            margin-bottom: 20px;
+            line-height: 1.5;
+            white-space: pre-line;
+        }
+
+        .confirm-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .confirm-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .confirm-btn.cancel {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .confirm-btn.ok {
+            background: #5c9ce6;
+            color: white;
+        }
+
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 2px; }
+
+        .location-input-wrapper {
+            position: relative;
+        }
+
+        .poi-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+        }
+
+        .poi-dropdown.show { display: block; }
+
+        .poi-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        .poi-item:last-child { border-bottom: none; }
+        .poi-item:hover { background: var(--gray-50); }
+
+        .poi-name { font-size: 13px; font-weight: 500; }
+        .poi-address { font-size: 11px; color: var(--gray-500); margin-top: 2px; }
+
+        .btn-export {
+            margin-left: 12px;
+            padding: 6px 12px;
+            background: #fff;
+            color: var(--gray-700);
+            border: 1px solid var(--gray-300);
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-export:hover {
+            background: var(--gray-50);
+            border-color: var(--gray-400);
+        }
+
+        .btn-export:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pdf-export-container {
+            position: absolute;
+            left: -9999px;
+            top: 0;
+            width: 800px;
+            background: #fff;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+        }
+
+        .pdf-title {
+            font-size: 18px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 16px;
+            color: #1f2937;
+        }
+
+        .pdf-date {
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #6b7280;
+        }
+
+        .pdf-task-item {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            page-break-inside: avoid;
+        }
+
+        .pdf-task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .pdf-task-type {
+            font-size: 14px;
+            font-weight: 600;
+            width: 33%;
+        }
+
+        .pdf-task-time {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f2937;
+            width: 33%;
+            text-align: center;
+        }
+
+        .pdf-task-placeholder {
+            width: 33%;
+        }
+
+        .pdf-task-row {
+            display: flex;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+
+        .pdf-task-label {
+            color: #6b7280;
+            margin-right: 2px;
+        }
+
+        .pdf-task-value {
+            color: #1f2937;
+        }
+
+        .pdf-passengers {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #f3f4f6;
+        }
+
+        .pdf-passenger-tag {
+            display: inline-block;
+            background: #f3f4f6;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-right: 6px;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <header class="header">
+            <div class="date-nav">
+                <button class="btn-icon" onclick="changeDate(-1)">‹</button>
+                <span id="currentDate">今天</span>
+                <button class="btn-icon" onclick="changeDate(1)">›</button>
+                <button class="btn-export" onclick="exportToPdf()">📄 导出</button>
+            </div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="timeline" onclick="switchTab('timeline')">📅 车辆排班</button>
+            <button class="tab-btn" data-tab="vehicles" onclick="switchTab('vehicles')">🚗 车辆管理</button>
+        </div>
+
+        <div class="tab-panel active" id="tab-timeline">
+            <div class="timeline-wrapper">
+                <div class="timeline-corner">时间</div>
+                <div class="timeline-header-scroll" id="timelineHeaderScroll">
+                    <div class="vehicles-row" id="vehiclesHeader"></div>
+                </div>
+                <div class="timeline-time-scroll" id="timelineTimeScroll">
+                    <div id="timeColumnContent"></div>
+                </div>
+                <div class="timeline-schedule-scroll" id="timelineScheduleScroll">
+                    <div class="timeline-content" id="timelineContent"></div>
+                </div>
+            </div>
+            <div class="legend">
+                <span class="legend-item"><span class="dot scheduled"></span>计划中</span>
+                <span class="legend-item"><span class="dot in-progress"></span>进行中</span>
+                <span class="legend-item"><span class="dot completed"></span>已到达</span>
+            </div>
+        </div>
+
+        <div class="tab-panel" id="tab-vehicles">
+            <button class="btn-primary btn-block" onclick="openVehicleModal()">+ 添加车辆</button>
+            <div class="list-container" id="vehicleList"></div>
+        </div>
+
+        <button class="fab" onclick="openTaskModal()">+</button>
+
+        <div class="modal" id="taskModal">
+            <div class="modal-overlay" onclick="closeTaskModal()"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="taskModalTitle">新建行程</h3>
+                    <button class="btn-close" onclick="closeTaskModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <form id="taskForm">
+                        <input type="hidden" id="taskId">
+                        <div class="form-row" style="align-items: stretch;">
+                            <label class="radio-label" style="flex:1;">
+                                <input type="radio" name="taskType" value="pickup" checked>
+                                <span>🛬 接</span>
+                            </label>
+                            <label class="radio-label" style="flex:1;">
+                                <input type="radio" name="taskType" value="dropoff">
+                                <span>🛫 送</span>
+                            </label>
+                            <select class="form-select placeholder" id="taskVehicle" required style="flex:1;">
+                                <option value="">车辆</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <input type="date" class="form-input" id="taskDate" required style="flex:1;" placeholder="日期">
+                            <div class="time-range-row" style="flex:1;">
+                                <input type="time" class="form-input" id="taskStartTime" required style="flex:1;" placeholder="开始">
+                                <span>-</span>
+                                <input type="time" class="form-input" id="taskEndTime" required style="flex:1;" placeholder="结束">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="location-row">
+                                <div class="location-input-wrapper" style="flex:1">
+                                    <input type="text" class="form-input" id="taskFrom" placeholder="出发地" required>
+                                    <input type="hidden" id="taskFromLat">
+                                    <input type="hidden" id="taskFromLng">
+                                    <div class="poi-dropdown" id="fromPoiDropdown"></div>
+                                </div>
+                                <span>→</span>
+                                <div class="location-input-wrapper" style="flex:1">
+                                    <input type="text" class="form-input" id="taskTo" placeholder="目的地" required>
+                                    <input type="hidden" id="taskToLat">
+                                    <input type="hidden" id="taskToLng">
+                                    <div class="poi-dropdown" id="toPoiDropdown"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="person-selector-header">
+                                <span>参会人</span>
+                                <select class="form-select company-select" id="companySelect" onchange="selectByCompany()">
+                                    <option value="">按公司选择</option>
+                                </select>
+                            </div>
+                            <div class="person-selector" id="personSelector"></div>
+                            <div class="selection-info" id="selectionInfo">已选 0 人</div>
+                        </div>
+                        <div class="form-group">
+                            <div class="escort-row">
+                                <input type="text" class="form-input" id="escortName" placeholder="陪同人员">
+                                <input type="tel" class="form-input" id="escortPhone" placeholder="电话">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <input type="text" class="form-input" id="taskNote" placeholder="备注（航班号、特殊需求等）">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" onclick="closeTaskModal()">取消</button>
+                    <button class="btn-primary" onclick="saveTask()">保存</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal" id="detailModal">
+            <div class="modal-overlay" onclick="closeDetailModal()"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>行程详情</h3>
+                    <button class="btn-close" onclick="closeDetailModal()">×</button>
+                </div>
+                <div class="modal-body" id="detailBody"></div>
+                <div class="status-actions" id="statusActions"></div>
+                <div class="modal-footer">
+                    <button class="btn-danger" onclick="deleteTask()">删除</button>
+                    <button class="btn-secondary" onclick="editTask()">编辑</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal" id="vehicleModal">
+            <div class="modal-overlay" onclick="closeVehicleModal()"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="vehicleModalTitle">添加车辆</h3>
+                    <button class="btn-close" onclick="closeVehicleModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <form id="vehicleForm">
+                        <input type="hidden" id="vehicleId">
+                        <div class="form-group">
+                            <label>车牌号</label>
+                            <input type="text" class="form-input" id="vehiclePlate" placeholder="陕A12345" required>
+                        </div>
+                        <div class="form-group">
+                            <label>车型</label>
+                            <input type="text" class="form-input" id="vehicleModel" placeholder="别克GL8" required>
+                        </div>
+                        <div class="form-group">
+                            <label>座位数</label>
+                            <input type="number" class="form-input" id="vehicleSeats" placeholder="7" min="1" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>司机姓名</label>
+                                <input type="text" class="form-input" id="vehicleDriverName" placeholder="张师傅">
+                            </div>
+                            <div class="form-group">
+                                <label>司机电话</label>
+                                <input type="tel" class="form-input" id="vehicleDriverPhone" placeholder="13800138000" maxlength="11" pattern="1[3-9][0-9]{9}" title="请输入11位手机号">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" onclick="closeVehicleModal()">取消</button>
+                    <button class="btn-primary" onclick="saveVehicle()">保存</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="toast" id="toast"></div>
+        
+        <div class="confirm-modal" id="confirmModal">
+            <div class="confirm-content">
+                <div class="confirm-message" id="confirmMessage"></div>
+                <div class="confirm-buttons">
+                    <button class="confirm-btn cancel" id="confirmCancel">取消</button>
+                    <button class="confirm-btn ok" id="confirmOk">确定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let conferenceId = null;
+        let chatId = '';
+        
+        let state = {
+            currentDate: new Date(),
+            vehicles: [],
+            participants: [],
+            tasks: [],
+            selectedPassengers: [],
+            editingTaskId: null,
+            currentTab: 'timeline'
+        };
+
+        function getHeaders() {
+            const token = localStorage.getItem('token');
+            return {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            };
+        }
+
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.parent.location.href = '/login.html';
+                return false;
+            }
+            return true;
+        }
+
+        async function init() {
+            if (!checkAuth()) return;
+            
+            const params = new URLSearchParams(window.location.search);
+            chatId = params.get('chat_id') || params.get('chatId') || params.get('openConversationId') || '';
+            conferenceId = params.get('conference_id');
+
+            if (!conferenceId) {
+                showError('缺少会议ID参数');
+                return;
+            }
+
+            await Promise.all([
+                loadVehicles(),
+                loadParticipants(),
+                loadTasks()
+            ]);
+            renderTimeline();
+            updateDateDisplay();
+        }
+
+        function showError(msg) {
+            document.getElementById('app').innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#666;font-size:16px;">${msg}</div>`;
+        }
+
+        async function loadVehicles() {
+            try {
+                const res = await fetch(`/api/transport/${conferenceId}/vehicles`, { headers: getHeaders() });
+                if (res.status === 401) {
+                    window.parent.location.href = '/login.html';
+                    return;
+                }
+                const data = await res.json();
+                state.vehicles = data.vehicles || [];
+            } catch (e) {
+                console.error('加载车辆失败', e);
+                state.vehicles = [];
+            }
+        }
+
+        async function loadParticipants() {
+            try {
+                const res = await fetch(`/api/participants/${conferenceId}`, { headers: getHeaders() });
+                if (res.status === 401) {
+                    window.parent.location.href = '/login.html';
+                    return;
+                }
+                const data = await res.json();
+                state.participants = (data || []).filter(p => p.has_transport === true);
+            } catch (e) {
+                console.error('加载参会人失败', e);
+                state.participants = [];
+            }
+        }
+
+        async function loadTasks() {
+            try {
+                const dateStr = formatDate(state.currentDate);
+                const res = await fetch(`/api/transport/${conferenceId}/tasks?date=${dateStr}`, { headers: getHeaders() });
+                if (res.status === 401) {
+                    window.parent.location.href = '/login.html';
+                    return;
+                }
+                const data = await res.json();
+                state.tasks = data.tasks || [];
+            } catch (e) {
+                console.error('加载行程失败', e);
+                state.tasks = [];
+            }
+        }
+
+        function formatDate(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function updateDateDisplay() {
+            const today = new Date();
+            const current = state.currentDate;
+            const isToday = formatDate(current) === formatDate(today);
+            document.getElementById('currentDate').textContent = isToday ? '今天' : `${current.getMonth() + 1}/${current.getDate()}`;
+        }
+
+        function changeDate(offset) {
+            state.currentDate.setDate(state.currentDate.getDate() + offset);
+            updateDateDisplay();
+            loadTasks().then(() => renderTimeline());
+        }
+
+        function switchTab(tab) {
+            state.currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === tab);
+            });
+            document.querySelectorAll('.tab-panel').forEach(panel => {
+                panel.classList.toggle('active', panel.id === `tab-${tab}`);
+            });
+
+            if (tab === 'timeline') renderTimeline();
+            if (tab === 'vehicles') renderVehicleList();
+        }
+
+        function renderTimeline() {
+            const header = document.getElementById('vehiclesHeader');
+            const timeColumn = document.getElementById('timeColumnContent');
+            const schedule = document.getElementById('timelineContent');
+
+            header.innerHTML = state.vehicles.map(v => `
+                <div class="vehicle-col-header">
+                    <div class="v-plate">${v.plate || ''}</div>
+                    <div class="v-info">${v.model || ''} · ${v.seats || 0}座</div>
+                    <div class="v-driver">${v.driver_name || ''} ${v.driver_phone || ''}</div>
+                </div>
+            `).join('');
+
+            let timeHtml = '';
+            let scheduleHtml = '';
+            for (let hour = 5; hour <= 24; hour++) {
+                const timeStr = String(hour).padStart(2, '0') + ':00';
+                timeHtml += `<div class="time-cell">${timeStr}</div>`;
+                scheduleHtml += `
+                    <div class="timeline-row" data-hour="${hour}">
+                        <div class="vehicle-cells">
+                            ${state.vehicles.map(v => renderTimeCell(v, hour)).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            timeColumn.innerHTML = timeHtml;
+            schedule.innerHTML = scheduleHtml;
+
+            renderFloatingTaskBlocks();
+            setupTimelineScrollSync();
+        }
+
+        function setupTimelineScrollSync() {
+            const headerScroll = document.getElementById('timelineHeaderScroll');
+            const timeScroll = document.getElementById('timelineTimeScroll');
+            const scheduleScroll = document.getElementById('timelineScheduleScroll');
+            
+            if (!headerScroll || !timeScroll || !scheduleScroll) return;
+            
+            scheduleScroll.addEventListener('scroll', () => {
+                headerScroll.scrollLeft = scheduleScroll.scrollLeft;
+                timeScroll.scrollTop = scheduleScroll.scrollTop;
+            });
+        }
+
+        function renderTimeCell(vehicle, hour) {
+            const hourStr = String(hour).padStart(2, '0');
+            const taskStartingHere = state.tasks.find(t => 
+                t.vehicle_id === vehicle.id && t.start_time.startsWith(hourStr + ':')
+            );
+
+            const taskInProgress = state.tasks.find(t => {
+                if (t.vehicle_id !== vehicle.id) return false;
+                const startHour = parseInt(t.start_time.split(':')[0]);
+                const endHour = parseInt(t.end_time.split(':')[0]);
+                return hour > startHour && hour < endHour;
+            });
+
+            if (taskStartingHere || taskInProgress) {
+                return `<div class="task-cell occupied"></div>`;
+            } else {
+                return `<div class="task-cell empty" onclick="openTaskModal(null, '${vehicle.id}', '${hourStr}:00')"></div>`;
+            }
+        }
+
+        function renderFloatingTaskBlocks() {
+            document.querySelectorAll('.task-block-floating').forEach(el => el.remove());
+
+            const container = document.getElementById('timelineContent');
+            if (!container) return;
+
+            state.tasks.forEach(task => {
+                const vehicle = state.vehicles.find(v => v.id === task.vehicle_id);
+                if (!vehicle) return;
+
+                const vehicleIndex = state.vehicles.findIndex(v => v.id === vehicle.id);
+                const startHour = parseInt(task.start_time.split(':')[0]);
+                const endHour = parseInt(task.end_time.split(':')[0]);
+                const duration = endHour - startHour;
+
+                if (startHour < 5 || startHour > 24) return;
+
+                const people = task.passengers || [];
+                const mainName = people[0]?.name || '未知';
+                const moreCount = people.length > 1 ? `+${people.length - 1}` : '';
+                const typeLabel = task.task_type === 'pickup' ? '接机' : '送机';
+
+                const topOffset = (startHour - 5) * 55;
+                const height = duration * 55 - 1;
+                const leftOffset = vehicleIndex * 110;
+
+                const block = document.createElement('div');
+                block.className = `task-block-floating ${task.status}`;
+                block.style.cssText = `top:${topOffset}px;left:${leftOffset}px;height:${height}px;`;
+                block.innerHTML = `
+                    <div class="block-content">
+                        <div class="block-names">${mainName}${moreCount}</div>
+                        <div class="block-type">${typeLabel} · ${people.length}/${vehicle.seats}座</div>
+                        <div class="block-time">${task.start_time}-${task.end_time}</div>
+                        <div class="block-dest">→${shorten(task.to_location)}</div>
+                    </div>
+                `;
+                block.onclick = () => openDetailModal(task.id);
+
+                container.appendChild(block);
+            });
+        }
+
+        function shorten(text) {
+            if (!text) return '';
+            return text.length > 4 ? text.substring(0, 4) : text;
+        }
+
+        function renderVehicleList() {
+            const container = document.getElementById('vehicleList');
+            container.innerHTML = state.vehicles.map(v => `
+                <div class="list-item">
+                    <div class="item-main">
+                        <div class="item-title">${v.plate}</div>
+                        <div class="item-sub">${v.model} · ${v.seats}座</div>
+                        <div class="item-sub">${v.driver_name || ''} ${v.driver_phone || ''}</div>
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn-icon" onclick="editVehicle(${v.id})">✏️</button>
+                        <button class="btn-icon" onclick="deleteVehicle(${v.id})">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function formatTime(timeStr) {
+            if (!timeStr) return '';
+            const d = new Date(timeStr);
+            return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+        }
+
+        function openTaskModal(taskId, vehicleId, startTime) {
+            state.editingTaskId = taskId;
+            state.selectedPassengers = [];
+
+            const modal = document.getElementById('taskModal');
+            const title = document.getElementById('taskModalTitle');
+            const vehicleSelect = document.getElementById('taskVehicle');
+            const personSelector = document.getElementById('personSelector');
+            const companySelect = document.getElementById('companySelect');
+
+            vehicleSelect.innerHTML = '<option value="">车辆</option>' + 
+                state.vehicles.map(v => `<option value="${v.id}">${v.plate} (${v.model})</option>`).join('');
+            
+            if (!vehicleId) {
+                vehicleSelect.classList.add('placeholder');
+            } else {
+                vehicleSelect.classList.remove('placeholder');
+            }
+            vehicleSelect.onchange = function() {
+                this.classList.toggle('placeholder', !this.value);
+                checkSeatsLimit();
+            };
+
+            const assignedPassengerIds = new Set();
+            state.tasks.forEach(task => {
+                if (task.id !== state.editingTaskId) {
+                    (task.passengers || []).forEach(p => assignedPassengerIds.add(p.id));
+                }
+            });
+
+            const availableParticipants = state.participants.filter(p => !assignedPassengerIds.has(p.id));
+
+            const companies = [...new Set(availableParticipants.map(p => p.company).filter(c => c))];
+            companySelect.innerHTML = '<option value="">按公司选择</option>' + 
+                companies.map(c => `<option value="${c}">${c}</option>`).join('');
+
+            personSelector.innerHTML = availableParticipants.map(p => `
+                <div class="person-tag" data-id="${p.id}" data-company="${p.company || ''}" onclick="togglePerson(${p.id})">
+                    <div class="p-name">${p.name}</div>
+                    <div class="p-company">${p.company || ''}</div>
+                </div>
+            `).join('');
+
+            document.getElementById('taskDate').value = formatDate(state.currentDate);
+            if (startTime) {
+                document.getElementById('taskStartTime').value = startTime;
+                const endHour = parseInt(startTime.split(':')[0]) + 2;
+                document.getElementById('taskEndTime').value = String(endHour).padStart(2, '0') + ':00';
+            }
+            if (vehicleId) {
+                document.getElementById('taskVehicle').value = vehicleId;
+                document.getElementById('taskVehicle').classList.remove('placeholder');
+            }
+
+            document.getElementById('taskFrom').value = '';
+            document.getElementById('taskTo').value = '';
+            document.getElementById('taskFromLat').value = '';
+            document.getElementById('taskFromLng').value = '';
+            document.getElementById('taskToLat').value = '';
+            document.getElementById('taskToLng').value = '';
+            document.getElementById('escortName').value = '';
+            document.getElementById('escortPhone').value = '';
+            document.getElementById('taskNote').value = '';
+            document.querySelector('input[name="taskType"][value="pickup"]').checked = true;
+
+            document.getElementById('escortName').oninput = checkSeatsLimit;
+            document.getElementById('escortPhone').oninput = checkSeatsLimit;
+
+            updateSelectionInfo();
+            title.textContent = '新建行程';
+            modal.classList.add('active');
+        }
+
+        function closeTaskModal() {
+            document.getElementById('taskModal').classList.remove('active');
+        }
+
+        function togglePerson(id) {
+            const vehicleId = document.getElementById('taskVehicle').value;
+            if (!vehicleId) {
+                showToast('请先选择车辆');
+                return;
+            }
+
+            const idx = state.selectedPassengers.indexOf(id);
+            if (idx > -1) {
+                state.selectedPassengers.splice(idx, 1);
+            } else {
+                const availableSeats = getAvailableSeats();
+                if (availableSeats <= 0) {
+                    showToast('座位已满');
+                    return;
+                }
+                state.selectedPassengers.push(id);
+            }
+            document.querySelectorAll('.person-tag').forEach(tag => {
+                tag.classList.toggle('selected', state.selectedPassengers.includes(parseInt(tag.dataset.id)));
+            });
+            updateSelectionInfo();
+        }
+
+        function updateSelectionInfo() {
+            const vehicleId = document.getElementById('taskVehicle').value;
+            let info = `已选 ${state.selectedPassengers.length} 人`;
+            
+            if (vehicleId) {
+                const vehicle = state.vehicles.find(v => v.id === parseInt(vehicleId));
+                if (vehicle) {
+                    let maxSeats = vehicle.seats || 0;
+                    const escortName = document.getElementById('escortName').value.trim();
+                    const escortPhone = document.getElementById('escortPhone').value.trim();
+                    if (escortName || escortPhone) {
+                        maxSeats -= 1;
+                    }
+                    info += ` / 最多 ${maxSeats} 人`;
+                }
+            }
+            
+            document.getElementById('selectionInfo').textContent = info;
+        }
+
+        function getAvailableSeats() {
+            const vehicleId = document.getElementById('taskVehicle').value;
+            if (!vehicleId) return 0;
+            
+            const vehicle = state.vehicles.find(v => v.id === parseInt(vehicleId));
+            if (!vehicle) return 0;
+            
+            let availableSeats = vehicle.seats || 0;
+            
+            const escortName = document.getElementById('escortName').value.trim();
+            const escortPhone = document.getElementById('escortPhone').value.trim();
+            if (escortName || escortPhone) {
+                availableSeats -= 1;
+            }
+            
+            availableSeats -= state.selectedPassengers.length;
+            
+            return Math.max(0, availableSeats);
+        }
+
+        function checkSeatsLimit() {
+            const vehicleId = document.getElementById('taskVehicle').value;
+            if (!vehicleId) return;
+            
+            const vehicle = state.vehicles.find(v => v.id === parseInt(vehicleId));
+            if (!vehicle) return;
+            
+            let maxSeats = vehicle.seats || 0;
+            
+            const escortName = document.getElementById('escortName').value.trim();
+            const escortPhone = document.getElementById('escortPhone').value.trim();
+            if (escortName || escortPhone) {
+                maxSeats -= 1;
+            }
+            
+            while (state.selectedPassengers.length > maxSeats && state.selectedPassengers.length > 0) {
+                const removedId = state.selectedPassengers.pop();
+                const tag = document.querySelector(`.person-tag[data-id="${removedId}"]`);
+                if (tag) tag.classList.remove('selected');
+            }
+            
+            updateSelectionInfo();
+        }
+
+        function selectByCompany() {
+            const vehicleId = document.getElementById('taskVehicle').value;
+            if (!vehicleId) {
+                showToast('请先选择车辆');
+                document.getElementById('companySelect').value = '';
+                return;
+            }
+
+            const company = document.getElementById('companySelect').value;
+            if (!company) return;
+
+            const availableSeats = getAvailableSeats();
+            if (availableSeats <= 0) {
+                showToast('座位已满');
+                document.getElementById('companySelect').value = '';
+                return;
+            }
+
+            let added = 0;
+            document.querySelectorAll('.person-tag').forEach(tag => {
+                if (added >= availableSeats) return;
+                if (tag.dataset.company === company) {
+                    const id = parseInt(tag.dataset.id);
+                    if (!state.selectedPassengers.includes(id)) {
+                        state.selectedPassengers.push(id);
+                        tag.classList.add('selected');
+                        added++;
+                    }
+                }
+            });
+            
+            if (added > 0) {
+                updateSelectionInfo();
+            } else {
+                showToast('该公司人员已全部选中或座位不足');
+            }
+            document.getElementById('companySelect').value = '';
+        }
+
+        async function saveTask() {
+            const taskType = document.querySelector('input[name="taskType"]:checked').value;
+            const taskDate = document.getElementById('taskDate').value;
+            const startTime = document.getElementById('taskStartTime').value;
+            const endTime = document.getElementById('taskEndTime').value;
+            const fromLocation = document.getElementById('taskFrom').value;
+            const toLocation = document.getElementById('taskTo').value;
+            const vehicleId = document.getElementById('taskVehicle').value;
+            const escortName = document.getElementById('escortName').value;
+            const escortPhone = document.getElementById('escortPhone').value;
+            const note = document.getElementById('taskNote').value;
+
+            if (!taskDate || !startTime || !endTime || !fromLocation || !toLocation || !vehicleId) {
+                showToast('请填写完整信息');
+                return;
+            }
+
+            const data = {
+                vehicle_id: parseInt(vehicleId),
+                task_type: taskType,
+                task_date: taskDate,
+                start_time: startTime,
+                end_time: endTime,
+                from_location: fromLocation,
+                from_lat: parseFloat(document.getElementById('taskFromLat').value) || null,
+                from_lng: parseFloat(document.getElementById('taskFromLng').value) || null,
+                to_location: toLocation,
+                to_lat: parseFloat(document.getElementById('taskToLat').value) || null,
+                to_lng: parseFloat(document.getElementById('taskToLng').value) || null,
+                participant_ids: state.selectedPassengers,
+                escort_name: escortName || null,
+                escort_phone: escortPhone || null,
+                note: note || null
+            };
+
+            try {
+                let res;
+                if (state.editingTaskId) {
+                    res = await fetch(`/api/transport/tasks/${state.editingTaskId}`, {
+                        method: 'PUT',
+                        headers: getHeaders(),
+                        body: JSON.stringify(data)
+                    });
+                } else {
+                    res = await fetch(`/api/transport/${conferenceId}/tasks`, {
+                        method: 'POST',
+                        headers: getHeaders(),
+                        body: JSON.stringify(data)
+                    });
+                }
+
+                if (!res.ok) throw new Error('保存失败');
+                
+                closeTaskModal();
+                await loadTasks();
+                renderTimeline();
+                showToast('保存成功');
+            } catch (e) {
+                showToast('保存失败: ' + e.message);
+            }
+        }
+
+        function openDetailModal(taskId) {
+            const task = state.tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            state.editingTaskId = taskId;
+
+            const vehicle = state.vehicles.find(v => v.id === task.vehicle_id);
+            const typeLabel = task.task_type === 'pickup' ? '接机' : '送机';
+
+            let passengersHtml = '';
+            (task.passengers || []).forEach(p => {
+                passengersHtml += `
+                    <div class="person-detail">
+                        <div class="pd-name">${p.name}</div>
+                        <div class="pd-info">${p.company || ''} ${p.title || ''}</div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('detailBody').innerHTML = `
+                <div class="detail-section">
+                    <div class="section-title">基本信息</div>
+                    <div class="detail-row"><span class="label">类型</span><span class="value">${typeLabel}</span></div>
+                    <div class="detail-row"><span class="label">日期</span><span class="value">${task.task_date}</span></div>
+                    <div class="detail-row"><span class="label">时间</span><span class="value">${task.start_time} - ${task.end_time}</span></div>
+                    <div class="detail-row"><span class="label">车辆</span><span class="value">${vehicle?.plate || ''} (${vehicle?.model || ''})</span></div>
+                    <div class="detail-row"><span class="label">司机</span><span class="value">${vehicle?.driver_name || ''} ${vehicle?.driver_phone || ''}</span></div>
+                </div>
+                <div class="detail-section">
+                    <div class="section-title">路线</div>
+                    <div class="detail-row"><span class="label">出发地</span><span class="value">${task.from_location}</span></div>
+                    <div class="detail-row"><span class="label">目的地</span><span class="value">${task.to_location}</span></div>
+                </div>
+                <div class="detail-section">
+                    <div class="section-title">乘客 (${(task.passengers || []).length}人)</div>
+                    ${passengersHtml}
+                </div>
+                ${task.escort_name ? `<div class="detail-section"><div class="section-title">陪同人员</div><div class="detail-row"><span class="label">${task.escort_name}</span><span class="value">${task.escort_phone || ''}</span></div></div>` : ''}
+                ${task.note ? `<div class="detail-section"><div class="section-title">备注</div><div class="detail-row"><span class="value">${task.note}</span></div></div>` : ''}
+            `;
+
+            const statusActions = document.getElementById('statusActions');
+            statusActions.innerHTML = '';
+
+            document.getElementById('detailModal').classList.add('active');
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detailModal').classList.remove('active');
+        }
+
+        async function updateStatus(status) {
+            if (!state.editingTaskId) return;
+
+            try {
+                const res = await fetch(`/api/transport/tasks/${state.editingTaskId}/status`, {
+                    method: 'PUT',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ status })
+                });
+
+                if (!res.ok) throw new Error('更新失败');
+
+                closeDetailModal();
+                await loadTasks();
+                renderTimeline();
+                showToast('状态已更新');
+            } catch (e) {
+                showToast('更新失败: ' + e.message);
+            }
+        }
+
+        function editTask() {
+            closeDetailModal();
+            const task = state.tasks.find(t => t.id === state.editingTaskId);
+            if (!task) return;
+
+            openTaskModal(task.id, task.vehicle_id, task.start_time);
+
+            document.getElementById('taskModalTitle').textContent = '编辑行程';
+            document.getElementById('taskDate').value = task.task_date;
+            document.getElementById('taskStartTime').value = task.start_time;
+            document.getElementById('taskEndTime').value = task.end_time;
+            document.getElementById('taskFrom').value = task.from_location;
+            document.getElementById('taskTo').value = task.to_location;
+            document.getElementById('taskVehicle').value = task.vehicle_id;
+            document.getElementById('taskVehicle').classList.remove('placeholder');
+            document.getElementById('escortName').value = task.escort_name || '';
+            document.getElementById('escortPhone').value = task.escort_phone || '';
+            document.getElementById('taskNote').value = task.note || '';
+            document.querySelector(`input[name="taskType"][value="${task.task_type}"]`).checked = true;
+
+            state.selectedPassengers = (task.passengers || []).map(p => p.id);
+            document.querySelectorAll('.person-tag').forEach(tag => {
+                tag.classList.toggle('selected', state.selectedPassengers.includes(parseInt(tag.dataset.id)));
+            });
+            updateSelectionInfo();
+        }
+
+        async function deleteTask() {
+            if (!state.editingTaskId) return;
+            const confirmed = await showConfirm('确定删除此行程？');
+            if (!confirmed) return;
+
+            try {
+                const res = await fetch(`/api/transport/tasks/${state.editingTaskId}`, {
+                    method: 'DELETE',
+                    headers: getHeaders()
+                });
+
+                if (!res.ok) throw new Error('删除失败');
+
+                closeDetailModal();
+                await loadTasks();
+                renderTimeline();
+                showToast('已删除');
+            } catch (e) {
+                showToast('删除失败: ' + e.message);
+            }
+        }
+
+        function openVehicleModal(vehicleId) {
+            state.editingVehicleId = vehicleId;
+            const modal = document.getElementById('vehicleModal');
+            const title = document.getElementById('vehicleModalTitle');
+
+            if (vehicleId) {
+                const v = state.vehicles.find(v => v.id === vehicleId);
+                if (v) {
+                    title.textContent = '编辑车辆';
+                    document.getElementById('vehicleId').value = v.id;
+                    document.getElementById('vehiclePlate').value = v.plate || '';
+                    document.getElementById('vehicleModel').value = v.model || '';
+                    document.getElementById('vehicleSeats').value = v.seats || '';
+                    document.getElementById('vehicleDriverName').value = v.driver_name || '';
+                    document.getElementById('vehicleDriverPhone').value = v.driver_phone || '';
+                }
+            } else {
+                title.textContent = '添加车辆';
+                document.getElementById('vehicleForm').reset();
+                document.getElementById('vehicleId').value = '';
+            }
+
+            modal.classList.add('active');
+        }
+
+        function closeVehicleModal() {
+            document.getElementById('vehicleModal').classList.remove('active');
+        }
+
+        function editVehicle(id) {
+            openVehicleModal(id);
+        }
+
+        async function saveVehicle() {
+            const plate = document.getElementById('vehiclePlate').value;
+            const model = document.getElementById('vehicleModel').value;
+            const seats = document.getElementById('vehicleSeats').value;
+            const driverName = document.getElementById('vehicleDriverName').value;
+            const driverPhone = document.getElementById('vehicleDriverPhone').value;
+
+            if (!plate || !model || !seats) {
+                showToast('请填写完整信息');
+                return;
+            }
+            
+            if (driverPhone && !/^1[3-9]\d{9}$/.test(driverPhone)) {
+                showToast('请输入正确的手机号');
+                return;
+            }
+
+            const data = {
+                plate,
+                model,
+                seats: parseInt(seats),
+                driver_name: driverName || null,
+                driver_phone: driverPhone || null
+            };
+
+            try {
+                let res;
+                if (state.editingVehicleId) {
+                    res = await fetch(`/api/transport/vehicles/${state.editingVehicleId}`, {
+                        method: 'PUT',
+                        headers: getHeaders(),
+                        body: JSON.stringify(data)
+                    });
+                } else {
+                    res = await fetch(`/api/transport/${conferenceId}/vehicles`, {
+                        method: 'POST',
+                        headers: getHeaders(),
+                        body: JSON.stringify(data)
+                    });
+                }
+
+                if (!res.ok) throw new Error('保存失败');
+
+                closeVehicleModal();
+                await loadVehicles();
+                renderVehicleList();
+                renderTimeline();
+                showToast('保存成功');
+            } catch (e) {
+                showToast('保存失败: ' + e.message);
+            }
+        }
+
+        async function deleteVehicle(id) {
+            const confirmed = await showConfirm('确定删除此车辆？');
+            if (!confirmed) return;
+
+            try {
+                const res = await fetch(`/api/transport/vehicles/${id}`, {
+                    method: 'DELETE',
+                    headers: getHeaders()
+                });
+
+                if (!res.ok) throw new Error('删除失败');
+
+                await loadVehicles();
+                renderVehicleList();
+                renderTimeline();
+                showToast('已删除');
+            } catch (e) {
+                showToast('删除失败: ' + e.message);
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        function showConfirm(message) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('confirmModal');
+                const msgEl = document.getElementById('confirmMessage');
+                const okBtn = document.getElementById('confirmOk');
+                const cancelBtn = document.getElementById('confirmCancel');
+                
+                msgEl.textContent = message;
+                modal.classList.add('active');
+                
+                const handleOk = () => {
+                    modal.classList.remove('active');
+                    okBtn.removeEventListener('click', handleOk);
+                    cancelBtn.removeEventListener('click', handleCancel);
+                    resolve(true);
+                };
+                
+                const handleCancel = () => {
+                    modal.classList.remove('active');
+                    okBtn.removeEventListener('click', handleOk);
+                    cancelBtn.removeEventListener('click', handleCancel);
+                    resolve(false);
+                };
+                
+                okBtn.addEventListener('click', handleOk);
+                cancelBtn.addEventListener('click', handleCancel);
+            });
+        }
+
+        async function checkUnassignedParticipants() {
+            try {
+                const res = await fetch(`/api/participants/${conferenceId}`, { headers: getHeaders() });
+                if (!res.ok) return [];
+                const allParticipants = await res.json();
+                
+                const needTransport = allParticipants.filter(p => p.has_transport === true);
+                
+                const assignedIds = new Set();
+                state.tasks.forEach(task => {
+                    (task.passengers || []).forEach(p => assignedIds.add(p.id));
+                });
+                
+                const unassigned = needTransport.filter(p => !assignedIds.has(p.id));
+                return unassigned;
+            } catch (e) {
+                console.error('检查未分配参会人失败', e);
+                return [];
+            }
+        }
+
+        async function exportToPdf() {
+            const unassignedParticipants = await checkUnassignedParticipants();
+            if (unassignedParticipants.length > 0) {
+                const names = unassignedParticipants.slice(0, 5).map(p => p.name).join('、');
+                const more = unassignedParticipants.length > 5 ? `等${unassignedParticipants.length}人` : '';
+                const confirmed = await showConfirm(`以下参会人需要接送但未分配行程：\n${names}${more}\n\n是否继续导出？`);
+                if (!confirmed) return;
+            }
+
+            if (state.tasks.length === 0) {
+                showToast('暂无行程数据可导出');
+                return;
+            }
+
+            const btn = document.querySelector('.btn-export');
+            btn.disabled = true;
+            btn.textContent = '⏳ 导出中...';
+
+            try {
+                const script1 = document.createElement('script');
+                script1.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+                document.head.appendChild(script1);
+                await new Promise(resolve => script1.onload = resolve);
+
+                const script2 = document.createElement('script');
+                script2.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+                document.head.appendChild(script2);
+                await new Promise(resolve => script2.onload = resolve);
+
+                const { jsPDF } = window.jspdf;
+
+                const container = document.createElement('div');
+                container.className = 'pdf-export-container';
+
+                const dateStr = formatDate(state.currentDate);
+                const isToday = formatDate(new Date()) === dateStr;
+                const displayDate = isToday ? '今天' : dateStr;
+
+                let tasksHtml = state.tasks.map(task => {
+                    const vehicle = state.vehicles.find(v => v.id === task.vehicle_id);
+                    const typeLabel = task.task_type === 'pickup' ? '🛬 接' : '🛫 送';
+                    const passengers = task.passengers || [];
+                    const passengersHtml = passengers.map(p => 
+                        `<span class="pdf-passenger-tag">${p.name}${p.company ? ' (' + p.company + ')' : ''}</span>`
+                    ).join('');
+
+                    return `
+                        <div class="pdf-task-item">
+                            <div class="pdf-task-header">
+                                <span class="pdf-task-type">${typeLabel}</span>
+                                <span class="pdf-task-time">${task.start_time}</span>
+                                <span class="pdf-task-placeholder"></span>
+                            </div>
+                            <div class="pdf-task-row" style="display: flex; justify-content: space-between;">
+                                <span style="flex:1;"><span class="pdf-task-label">司机：</span><span class="pdf-task-value">${vehicle?.driver_name || ''} ${vehicle?.driver_phone || ''}</span></span>
+                                <span style="flex:1;"><span class="pdf-task-label">车辆：</span><span class="pdf-task-value">${vehicle?.plate || ''}(${vehicle?.model || ''})</span></span>
+                                <span style="flex:1;"><span class="pdf-task-label">陪同：</span><span class="pdf-task-value">${task.escort_name || ''} ${task.escort_phone || ''}</span></span>
+                            </div>
+                            <div class="pdf-task-row">
+                                <span class="pdf-task-label">路线：</span>
+                                <span class="pdf-task-value">${task.from_location} → ${task.to_location}</span>
+                            </div>
+                            ${passengers.length > 0 ? `
+                            <div class="pdf-passengers">
+                                <div class="pdf-task-row">
+                                    <span class="pdf-task-label">乘客：</span>
+                                    <span class="pdf-task-value">${passengersHtml}</span>
+                                </div>
+                            </div>
+                            ` : ''}
+                            ${task.note ? `
+                            <div class="pdf-task-row">
+                                <span class="pdf-task-label">备注：</span>
+                                <span class="pdf-task-value">${task.note}</span>
+                            </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+
+                container.innerHTML = `
+                    <div class="pdf-title">接送行程安排</div>
+                    <div class="pdf-date">日期：${displayDate}</div>
+                    ${tasksHtml}
+                `;
+
+                document.body.appendChild(container);
+
+                const htmlCanvas = await html2canvas(container, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#ffffff'
+                });
+
+                document.body.removeChild(container);
+
+                const imgData = htmlCanvas.toDataURL('image/png');
+                const pdf = new jsPDF('portrait', 'mm', 'a4');
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                const imgWidth = pageWidth - 20;
+                const imgHeight = (htmlCanvas.height * imgWidth) / htmlCanvas.width;
+                const pages = Math.ceil(imgHeight / (pageHeight - 20));
+
+                for (let i = 0; i < pages; i++) {
+                    if (i > 0) pdf.addPage();
+                    const yOffset = -i * (pageHeight - 20);
+                    pdf.addImage(imgData, 'PNG', 10, yOffset + 10, imgWidth, imgHeight);
+                }
+
+                pdf.save(`接送行程_${dateStr}.pdf`);
+                showToast('导出成功');
+            } catch (e) {
+                console.error(e);
+                showToast('导出失败: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '📄 导出';
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
