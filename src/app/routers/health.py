@@ -2,11 +2,20 @@
 健康检查路由
 """
 
-from fastapi import APIRouter
+from app.asgi_app import Router
 
-router = APIRouter(tags=["health"])
+router = Router()
 
 
 @router.get("/health")
-async def health_check():
+async def health_check(req):
     return {"status": "ok", "message": "服务运行中", "version": "3.0.0", "platform": "cloudflare-workers"}
+
+
+@router.get("/")
+async def root(req):
+    return {
+        "message": "会议服务管理平台 API",
+        "version": "3.0.0",
+        "platform": "cloudflare-workers",
+    }

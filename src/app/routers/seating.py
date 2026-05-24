@@ -2,30 +2,28 @@
 座位管理路由 - D1 版本
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from app.asgi_app import Router, HTTPException
 from datetime import datetime
 
-from app.core.database import get_db, D1Database
+from app.core.database import get_db_from_env
 from app.core.security import get_current_active_user
 from app.schemas.seating import (
     AreaCreate, AreaUpdate, AreaPositionUpdate,
     SeatAssign, SwapRequest, AutoAssignRequest, PriorityConfig
 )
 
-router = APIRouter(prefix="/seating", tags=["seating"])
+router = Router(prefix="/seating")
 
 
 @router.get("/{conference_id}/areas")
-async def get_areas(
-    conference_id: int,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def get_areas(req, conference_id: str):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
     user_id = current_user["id"]
 
     result = await db.execute(
         "SELECT * FROM seating_areas WHERE user_id = ? AND conference_id = ? ORDER BY position_y, position_x",
-        [user_id, conference_id]
+        [user_id, int(conference_id)]
     )
     areas = [dict(r) for r in result["results"]]
 
@@ -44,12 +42,10 @@ async def get_areas(
 
 
 @router.post("/{conference_id}/areas")
-async def create_area(
-    conference_id: int,
-    data: AreaCreate,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def create_area(req, conference_id: str):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
+    data = req.json(AreaCreate)
     user_id = current_user["id"]
 
     import json
@@ -58,7 +54,7 @@ async def create_area(
     result = await db.execute_run(
         """INSERT INTO seating_areas (user_id, conference_id, name, area_type, config, position_x, position_y)
            VALUES (?, ?, ?, ?, ?, ?, ?)""",
-        [user_id, conference_id, data.name, data.area_type, config_str,
+        [user_id, int(conference_id), data.name, data.area_type, config_str,
          data.position_x, data.position_y]
     )
 
@@ -70,18 +66,15 @@ async def create_area(
 
 
 @router.put("/{conference_id}/areas/{area_id}")
-async def update_area(
-    conference_id: int,
-    area_id: int,
-    data: AreaUpdate,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def update_area(req, conference_id: str, area_id: str):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
+    data = req.json(AreaUpdate)
     user_id = current_user["id"]
 
     existing = await db.execute_one(
         "SELECT id FROM seating_areas WHERE id = ? AND user_id = ? AND conference_id = ?",
-        [area_id, user_id, conference_id]
+        [int(area_id), user_id, int(conference_id)]
     )
     if not existing:
         raise HTTPException(status_code=404, detail="区域不存在")
@@ -97,24 +90,22 @@ async def update_area(
         params.append(value)
 
     if set_clauses:
-        params.append(area_id)
+        params.append(int(area_id))
         params.append(user_id)
         await db.execute_run(
             f"UPDATE seating_areas SET {', '.join(set_clauses)} WHERE id = ? AND user_id = ?",
             params
         )
 
-    row = await db.execute_one("SELECT * FROM seating_areas WHERE id = ?", [area_id])
+    row = await db.execute_one("SELECT * FROM seating_areas WHERE id = ?", [int(area_id)])
     return dict(row)
 
 
 @router.put("/{conference_id}/areas/positions")
-async def update_area_positions(
-    conference_id: int,
-    updates: list[AreaPositionUpdate],
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def update_area_positions(req, conference_id: str):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
+    updates = req.json(list)  # list of position updates
     user_id = current_user["id"]
 
     for update in updates:
@@ -127,78 +118,67 @@ async def update_area_positions(
 
 
 @router.delete("/{conference_id}/areas/{area_id}")
-async def delete_area(
-    conference_id: int,
-    area_id: int,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def delete_area(req, conference_id: str, area_id: str):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
     user_id = current_user["id"]
 
     await db.execute_run(
         "DELETE FROM seating_assignments WHERE area_id = ? AND user_id = ?",
-        [area_id, user_id]
+        [int(area_id), user_id]
     )
     await db.execute_run(
         "DELETE FROM seating_areas WHERE id = ? AND user_id = ? AND conference_id = ?",
-        [area_id, user_id, conference_id]
+        [int(area_id), user_id, int(conference_id)]
     )
     return {"message": "区域删除成功"}
 
 
 @router.post("/{conference_id}/assign")
-async def assign_seat(
-    conference_id: int,
-    data: SeatAssign,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def assign_seat(req, conference_id: str):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
+    data = req.json(SeatAssign)
     user_id = current_user["id"]
 
     # 检查是否已分配
     existing = await db.execute_one(
         "SELECT id FROM seating_assignments WHERE participant_id = ? AND user_id = ? AND conference_id = ?",
-        [data.participant_id, user_id, conference_id]
+        [data.participant_id, user_id, int(conference_id)]
     )
     if existing:
-        # 更新已有分配
         await db.execute_run(
             "UPDATE seating_assignments SET area_id = ?, seat_number = ? WHERE participant_id = ? AND user_id = ? AND conference_id = ?",
-            [data.area_id, data.seat_number, data.participant_id, user_id, conference_id]
+            [data.area_id, data.seat_number, data.participant_id, user_id, int(conference_id)]
         )
     else:
         await db.execute_run(
             """INSERT INTO seating_assignments (user_id, conference_id, area_id, participant_id, seat_number)
                VALUES (?, ?, ?, ?, ?)""",
-            [user_id, conference_id, data.area_id, data.participant_id, data.seat_number]
+            [user_id, int(conference_id), data.area_id, data.participant_id, data.seat_number]
         )
 
     return {"message": "座位分配成功"}
 
 
 @router.delete("/{conference_id}/assign/{assignment_id}")
-async def remove_seat_assignment(
-    conference_id: int,
-    assignment_id: int,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def remove_seat_assignment(req, conference_id: str, assignment_id: str):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
     user_id = current_user["id"]
 
     await db.execute_run(
         "DELETE FROM seating_assignments WHERE id = ? AND user_id = ? AND conference_id = ?",
-        [assignment_id, user_id, conference_id]
+        [int(assignment_id), user_id, int(conference_id)]
     )
     return {"message": "座位分配已移除"}
 
 
 @router.post("/{conference_id}/swap")
-async def swap_seats(
-    conference_id: int,
-    data: SwapRequest,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def swap_seats(req, conference_id: str):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
+    data = req.json(SwapRequest)
     user_id = current_user["id"]
 
     a1 = await db.execute_one(
@@ -225,12 +205,10 @@ async def swap_seats(
 
 
 @router.post("/{conference_id}/auto-assign")
-async def auto_assign_seats(
-    conference_id: int,
-    data: AutoAssignRequest,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def auto_assign_seats(req, conference_id: str):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
+    data = req.json(AutoAssignRequest)
     user_id = current_user["id"]
 
     # 获取未分配座位的参会人
@@ -238,14 +216,14 @@ async def auto_assign_seats(
         """SELECT p.* FROM participants p
            WHERE p.user_id = ? AND p.conference_id = ? AND p.is_attending = 1
            AND p.id NOT IN (SELECT participant_id FROM seating_assignments WHERE user_id = ? AND conference_id = ?)""",
-        [user_id, conference_id, user_id, conference_id]
+        [user_id, int(conference_id), user_id, int(conference_id)]
     )
     participants_list = [dict(r) for r in participants["results"]]
 
     # 获取所有区域
     areas = await db.execute(
         "SELECT * FROM seating_areas WHERE user_id = ? AND conference_id = ?",
-        [user_id, conference_id]
+        [user_id, int(conference_id)]
     )
     areas_list = [dict(r) for r in areas["results"]]
 
@@ -265,7 +243,7 @@ async def auto_assign_seats(
         await db.execute_run(
             """INSERT INTO seating_assignments (user_id, conference_id, area_id, participant_id, seat_number)
                VALUES (?, ?, ?, ?, ?)""",
-            [user_id, conference_id, area["id"], p["id"], str(seat_num)]
+            [user_id, int(conference_id), area["id"], p["id"], str(seat_num)]
         )
         assigned += 1
         seat_num += 1
@@ -286,15 +264,13 @@ async def auto_assign_seats(
 
 
 @router.delete("/{conference_id}/clear")
-async def clear_seating(
-    conference_id: int,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def clear_seating(req, conference_id: str):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
     user_id = current_user["id"]
 
     await db.execute_run(
         "DELETE FROM seating_assignments WHERE user_id = ? AND conference_id = ?",
-        [user_id, conference_id]
+        [user_id, int(conference_id)]
     )
     return {"message": "座位安排已清空"}

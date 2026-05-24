@@ -1,11 +1,9 @@
 """
 D1 数据库配置 - Cloudflare Workers 版本
 共用一个 D1 数据库，通过 user_id 字段实现数据隔离
-通过 FastAPI request scope 获取 env.DB 绑定
 """
 
 import json
-from fastapi import Request, Depends
 
 
 class D1Database:
@@ -51,11 +49,10 @@ class D1Database:
         return await self.d1.batch(stmts)
 
 
-async def get_db(request: Request) -> D1Database:
-    """FastAPI 依赖注入：从 request scope 获取 D1 数据库实例"""
-    env = request.scope.get("env")
+def get_db_from_env(env):
+    """从 Workers env 对象获取 D1 数据库实例"""
     if env is None:
-        raise RuntimeError("无法获取 Workers env，请确保通过 asgi.fetch 传递了 env")
+        raise RuntimeError("无法获取 Workers env")
     if not hasattr(env, "DB"):
         raise RuntimeError("D1 数据库绑定未找到，请检查 wrangler.jsonc 中的 binding 配置")
     return D1Database(env.DB)

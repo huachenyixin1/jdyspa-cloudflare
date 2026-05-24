@@ -7,14 +7,12 @@ from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from fastapi import Depends, HTTPException, status, Request
-from fastapi.security import OAuth2PasswordBearer
 
-from app.core.database import get_db, D1Database
+from app.asgi_app import HTTPException
+from app.core.database import get_db_from_env
 from app.core.config import settings
 
 pwd_context = CryptContext(schemes=["sha256_crypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 ACCESS_TOKEN_EXPIRE_HOURS = 24
 
@@ -38,13 +36,14 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     return encoded_jwt
 
 
-async def get_current_user(
-    request: Request,
-    token: str = Depends(oauth2_scheme),
-) -> dict:
-    """获取当前用户，返回用户字典"""
+async def get_current_user(req) -> dict:
+    """从请求中获取当前用户"""
+    token = req.authorization
+    if not token:
+        raise HTTPException(status_code=401, detail="未提供认证凭据")
+
     credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
+        status_code=401,
         detail="无法验证凭据",
         headers={"WWW-Authenticate": "Bearer"},
     )
@@ -57,11 +56,8 @@ async def get_current_user(
     except (JWTError, ValueError, TypeError):
         raise credentials_exception
 
-    db = await get_db(request)
-    row = await db.execute_one(
-        "SELECT * FROM users WHERE id = ?",
-        [user_id]
-    )
+    db = get_db_from_env(req.env)
+    row = await db.execute_one("SELECT * FROM users WHERE id = ?", [user_id])
     if not row:
         raise credentials_exception
 
@@ -71,7 +67,9 @@ async def get_current_user(
     return user
 
 
-async def get_current_active_user(current_user: dict = Depends(get_current_user)) -> dict:
-    if not current_user.get("is_active"):
+async def get_current_active_user(req) -> dict:
+    """获取当前活跃用户"""
+    user = await get_current_user(req)
+    if not user.get("is_active"):
         raise HTTPException(status_code=400, detail="用户已被禁用")
-    return current_user
+    return user

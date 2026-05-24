@@ -7,15 +7,14 @@
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import StreamingResponse
+from app.asgi_app import Router, HTTPException, StreamingResponse
 from urllib.parse import quote
 
-from app.core.database import get_db, D1Database
+from app.core.database import get_db_from_env
 from app.core.security import get_current_active_user
 from app.schemas.participant import ParticipantCreate, ParticipantUpdate, BatchDeleteRequest
 
-router = APIRouter(prefix="/participants", tags=["participants"])
+router = Router(prefix="/participants")
 
 
 def participant_to_dict(p: dict, decrypt: bool = False) -> dict:
@@ -59,20 +58,18 @@ async def download_template():
 
 
 @router.get("/{conference_id}")
-async def get_participants(
-    conference_id: int,
-    name: str = "",
-    company: str = "",
-    department: str = "",
-    position: str = "",
-    title: str = "",
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def get_participants(req, conference_id: str):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
     user_id = current_user["id"]
+    name = req.query_param("name", "")
+    company = req.query_param("company", "")
+    department = req.query_param("department", "")
+    position = req.query_param("position", "")
+    title = req.query_param("title", "")
 
     query = "SELECT * FROM participants WHERE user_id = ? AND conference_id = ?"
-    params = [user_id, conference_id]
+    params = [user_id, int(conference_id)]
 
     if name:
         query += " AND name LIKE ?"
@@ -95,11 +92,10 @@ async def get_participants(
 
 
 @router.post("/")
-async def create_participant(
-    data: ParticipantCreate,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def create_participant(req):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
+    data = req.json(ParticipantCreate)
     user_id = current_user["id"]
 
     # 验证会议属于当前用户
@@ -127,17 +123,15 @@ async def create_participant(
 
 
 @router.put("/{participant_id}")
-async def update_participant(
-    participant_id: int,
-    data: ParticipantUpdate,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def update_participant(req, participant_id: str):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
+    data = req.json(ParticipantUpdate)
     user_id = current_user["id"]
 
     row = await db.execute_one(
         "SELECT * FROM participants WHERE id = ? AND user_id = ?",
-        [participant_id, user_id]
+        [int(participant_id), user_id]
     )
     if not row:
         raise HTTPException(status_code=404, detail="参会人不存在")
@@ -147,19 +141,19 @@ async def update_participant(
 
     # 处理取消参会/用餐/住宿/接送时清除相关安排
     if "is_attending" in update_data and not update_data["is_attending"] and participant.get("is_attending"):
-        await db.execute_run("DELETE FROM seating_assignments WHERE participant_id = ? AND user_id = ?", [participant_id, user_id])
-        await db.execute_run("DELETE FROM hotel_assignments WHERE participant_id = ? AND user_id = ?", [participant_id, user_id])
-        await db.execute_run("DELETE FROM restaurant_seats WHERE participant_id = ? AND user_id = ?", [participant_id, user_id])
-        await db.execute_run("DELETE FROM transport_task_passengers WHERE participant_id = ? AND user_id = ?", [participant_id, user_id])
+        await db.execute_run("DELETE FROM seating_assignments WHERE participant_id = ? AND user_id = ?", [int(participant_id), user_id])
+        await db.execute_run("DELETE FROM hotel_assignments WHERE participant_id = ? AND user_id = ?", [int(participant_id), user_id])
+        await db.execute_run("DELETE FROM restaurant_seats WHERE participant_id = ? AND user_id = ?", [int(participant_id), user_id])
+        await db.execute_run("DELETE FROM transport_task_passengers WHERE participant_id = ? AND user_id = ?", [int(participant_id), user_id])
 
     if "has_meal" in update_data and not update_data["has_meal"] and participant.get("has_meal"):
-        await db.execute_run("DELETE FROM restaurant_seats WHERE participant_id = ? AND user_id = ?", [participant_id, user_id])
+        await db.execute_run("DELETE FROM restaurant_seats WHERE participant_id = ? AND user_id = ?", [int(participant_id), user_id])
 
     if "has_hotel" in update_data and not update_data["has_hotel"] and participant.get("has_hotel"):
-        await db.execute_run("DELETE FROM hotel_assignments WHERE participant_id = ? AND user_id = ?", [participant_id, user_id])
+        await db.execute_run("DELETE FROM hotel_assignments WHERE participant_id = ? AND user_id = ?", [int(participant_id), user_id])
 
     if "has_transport" in update_data and not update_data["has_transport"] and participant.get("has_transport"):
-        await db.execute_run("DELETE FROM transport_task_passengers WHERE participant_id = ? AND user_id = ?", [participant_id, user_id])
+        await db.execute_run("DELETE FROM transport_task_passengers WHERE participant_id = ? AND user_id = ?", [int(participant_id), user_id])
 
     set_clauses = []
     params = []
@@ -176,23 +170,22 @@ async def update_participant(
 
     if set_clauses:
         set_clauses.append("updated_at = CURRENT_TIMESTAMP")
-        params.append(participant_id)
+        params.append(int(participant_id))
         params.append(user_id)
         await db.execute_run(
             f"UPDATE participants SET {', '.join(set_clauses)} WHERE id = ? AND user_id = ?",
             params
         )
 
-    row = await db.execute_one("SELECT * FROM participants WHERE id = ?", [participant_id])
+    row = await db.execute_one("SELECT * FROM participants WHERE id = ?", [int(participant_id)])
     return participant_to_dict(dict(row))
 
 
 @router.delete("/batch")
-async def batch_delete_participants(
-    data: BatchDeleteRequest,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def batch_delete_participants(req):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
+    data = req.json(BatchDeleteRequest)
     user_id = current_user["id"]
 
     deleted = 0
@@ -207,11 +200,9 @@ async def batch_delete_participants(
     return {"deleted": deleted}
 
 
-@router.post("/{conference_id}/import")
-async def import_participants(
-    conference_id: int,
-    current_user: dict = Depends(get_current_active_user),
-):
+@router.get("/{conference_id}/import")
+async def import_participants(req, conference_id: str):
+    current_user = await get_current_active_user(req)
     """
     Excel 导入在 Workers 中不可用（openpyxl 不支持 Pyodide）
     此接口需要前端改为 CSV 导入，或通过其他方式处理
@@ -223,17 +214,15 @@ async def import_participants(
 
 
 @router.get("/{conference_id}/validate")
-async def validate_participants(
-    conference_id: int,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def validate_participants(req, conference_id: str):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
     user_id = current_user["id"]
 
     # 获取所有参会人
     result = await db.execute(
         "SELECT * FROM participants WHERE user_id = ? AND conference_id = ?",
-        [user_id, conference_id]
+        [user_id, int(conference_id)]
     )
     participants = [dict(r) for r in result["results"]]
 

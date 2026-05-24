@@ -4,8 +4,6 @@
 替代方案: 使用 Cloudflare Email Workers 或第三方 API（如 Resend、SendGrid）
 """
 
-from fastapi import HTTPException
-
 
 async def send_email(
     to_email: str,

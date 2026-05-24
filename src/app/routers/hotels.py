@@ -2,28 +2,26 @@
 酒店管理路由 - D1 版本
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from app.asgi_app import Router, HTTPException
 
-from app.core.database import get_db, D1Database
+from app.core.database import get_db_from_env
 from app.core.security import get_current_active_user
 from app.schemas.hotel import HotelCreate, HotelUpdate, RoomCreate, RoomBatchCreate, RoomUpdate, AssignmentCreate
 
-router = APIRouter(prefix="/hotels", tags=["hotels"])
+router = Router(prefix="/hotels")
 
 
 # ===== 酒店 CRUD =====
 
 @router.get("/{conference_id}")
-async def get_hotels(
-    conference_id: int,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def get_hotels(req, conference_id: str):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
     user_id = current_user["id"]
 
     result = await db.execute(
         "SELECT * FROM hotels WHERE user_id = ? AND conference_id = ? ORDER BY created_at",
-        [user_id, conference_id]
+        [user_id, int(conference_id)]
     )
     hotels = [dict(r) for r in result["results"]]
 
@@ -48,18 +46,16 @@ async def get_hotels(
 
 
 @router.post("/{conference_id}")
-async def create_hotel(
-    conference_id: int,
-    data: HotelCreate,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def create_hotel(req, conference_id: str):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
+    data = req.json(HotelCreate)
     user_id = current_user["id"]
 
     result = await db.execute_run(
         """INSERT INTO hotels (user_id, conference_id, name, location, contact, note)
            VALUES (?, ?, ?, ?, ?, ?)""",
-        [user_id, conference_id, data.name, data.location, data.contact, data.note]
+        [user_id, int(conference_id), data.name, data.location, data.contact, data.note]
     )
 
     new_id = result["meta"]["last_row_id"]
@@ -70,18 +66,15 @@ async def create_hotel(
 
 
 @router.put("/{conference_id}/{hotel_id}")
-async def update_hotel(
-    conference_id: int,
-    hotel_id: int,
-    data: HotelUpdate,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def update_hotel(req, conference_id: str, hotel_id: str):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
+    data = req.json(HotelUpdate)
     user_id = current_user["id"]
 
     existing = await db.execute_one(
         "SELECT id FROM hotels WHERE id = ? AND user_id = ? AND conference_id = ?",
-        [hotel_id, user_id, conference_id]
+        [int(hotel_id), user_id, int(conference_id)]
     )
     if not existing:
         raise HTTPException(status_code=404, detail="酒店不存在")
@@ -94,38 +87,35 @@ async def update_hotel(
         params.append(value)
 
     if set_clauses:
-        params.append(hotel_id)
+        params.append(int(hotel_id))
         params.append(user_id)
         await db.execute_run(
             f"UPDATE hotels SET {', '.join(set_clauses)} WHERE id = ? AND user_id = ?",
             params
         )
 
-    row = await db.execute_one("SELECT * FROM hotels WHERE id = ?", [hotel_id])
+    row = await db.execute_one("SELECT * FROM hotels WHERE id = ?", [int(hotel_id)])
     return dict(row)
 
 
 @router.delete("/{conference_id}/{hotel_id}")
-async def delete_hotel(
-    conference_id: int,
-    hotel_id: int,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def delete_hotel(req, conference_id: str, hotel_id: str):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
     user_id = current_user["id"]
 
     # 删除相关分配
     await db.execute_run(
         "DELETE FROM hotel_assignments WHERE room_id IN (SELECT id FROM hotel_rooms WHERE hotel_id = ? AND user_id = ?)",
-        [hotel_id, user_id]
+        [int(hotel_id), user_id]
     )
     await db.execute_run(
         "DELETE FROM hotel_rooms WHERE hotel_id = ? AND user_id = ?",
-        [hotel_id, user_id]
+        [int(hotel_id), user_id]
     )
     await db.execute_run(
         "DELETE FROM hotels WHERE id = ? AND user_id = ? AND conference_id = ?",
-        [hotel_id, user_id, conference_id]
+        [int(hotel_id), user_id, int(conference_id)]
     )
     return {"message": "酒店删除成功"}
 
@@ -133,19 +123,16 @@ async def delete_hotel(
 # ===== 房间 CRUD =====
 
 @router.post("/{conference_id}/{hotel_id}/rooms")
-async def create_room(
-    conference_id: int,
-    hotel_id: int,
-    data: RoomCreate,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def create_room(req, conference_id: str, hotel_id: str):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
+    data = req.json(RoomCreate)
     user_id = current_user["id"]
 
     result = await db.execute_run(
         """INSERT INTO hotel_rooms (user_id, conference_id, hotel_id, room_number, room_type, floor, position_x, position_y)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-        [user_id, conference_id, hotel_id, data.room_number, data.room_type,
+        [user_id, int(conference_id), int(hotel_id), data.room_number, data.room_type,
          data.floor, data.position_x, data.position_y]
     )
 
@@ -157,13 +144,10 @@ async def create_room(
 
 
 @router.post("/{conference_id}/{hotel_id}/rooms/batch")
-async def batch_create_rooms(
-    conference_id: int,
-    hotel_id: int,
-    data: RoomBatchCreate,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def batch_create_rooms(req, conference_id: str, hotel_id: str):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
+    data = req.json(RoomBatchCreate)
     user_id = current_user["id"]
 
     created = []
@@ -171,7 +155,7 @@ async def batch_create_rooms(
         result = await db.execute_run(
             """INSERT INTO hotel_rooms (user_id, conference_id, hotel_id, room_number, room_type, floor, position_x, position_y)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-            [user_id, conference_id, hotel_id,
+            [user_id, int(conference_id), int(hotel_id),
              room_data.get("room_number", f"{i+1}"),
              room_data.get("room_type", "single"),
              room_data.get("floor", 1),
@@ -186,18 +170,15 @@ async def batch_create_rooms(
 
 
 @router.put("/{conference_id}/rooms/{room_id}")
-async def update_room(
-    conference_id: int,
-    room_id: int,
-    data: RoomUpdate,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def update_room(req, conference_id: str, room_id: str):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
+    data = req.json(RoomUpdate)
     user_id = current_user["id"]
 
     existing = await db.execute_one(
         "SELECT id FROM hotel_rooms WHERE id = ? AND user_id = ?",
-        [room_id, user_id]
+        [int(room_id), user_id]
     )
     if not existing:
         raise HTTPException(status_code=404, detail="房间不存在")
@@ -210,33 +191,30 @@ async def update_room(
         params.append(value)
 
     if set_clauses:
-        params.append(room_id)
+        params.append(int(room_id))
         params.append(user_id)
         await db.execute_run(
             f"UPDATE hotel_rooms SET {', '.join(set_clauses)} WHERE id = ? AND user_id = ?",
             params
         )
 
-    row = await db.execute_one("SELECT * FROM hotel_rooms WHERE id = ?", [room_id])
+    row = await db.execute_one("SELECT * FROM hotel_rooms WHERE id = ?", [int(room_id)])
     return dict(row)
 
 
 @router.delete("/{conference_id}/rooms/{room_id}")
-async def delete_room(
-    conference_id: int,
-    room_id: int,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def delete_room(req, conference_id: str, room_id: str):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
     user_id = current_user["id"]
 
     await db.execute_run(
         "DELETE FROM hotel_assignments WHERE room_id = ? AND user_id = ?",
-        [room_id, user_id]
+        [int(room_id), user_id]
     )
     await db.execute_run(
         "DELETE FROM hotel_rooms WHERE id = ? AND user_id = ?",
-        [room_id, user_id]
+        [int(room_id), user_id]
     )
     return {"message": "房间删除成功"}
 
@@ -244,60 +222,53 @@ async def delete_room(
 # ===== 住宿分配 =====
 
 @router.post("/{conference_id}/assign")
-async def assign_hotel(
-    conference_id: int,
-    data: AssignmentCreate,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def assign_hotel(req, conference_id: str):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
+    data = req.json(AssignmentCreate)
     user_id = current_user["id"]
 
     # 检查是否已分配
     existing = await db.execute_one(
         "SELECT id FROM hotel_assignments WHERE participant_id = ? AND user_id = ? AND conference_id = ?",
-        [data.participant_id, user_id, conference_id]
+        [data.participant_id, user_id, int(conference_id)]
     )
     if existing:
         await db.execute_run(
             "UPDATE hotel_assignments SET room_id = ?, check_in = ?, check_out = ? WHERE participant_id = ? AND user_id = ? AND conference_id = ?",
-            [data.room_id, data.check_in, data.check_out, data.participant_id, user_id, conference_id]
+            [data.room_id, data.check_in, data.check_out, data.participant_id, user_id, int(conference_id)]
         )
     else:
         await db.execute_run(
             """INSERT INTO hotel_assignments (user_id, conference_id, room_id, participant_id, check_in, check_out)
                VALUES (?, ?, ?, ?, ?, ?)""",
-            [user_id, conference_id, data.room_id, data.participant_id, data.check_in, data.check_out]
+            [user_id, int(conference_id), data.room_id, data.participant_id, data.check_in, data.check_out]
         )
 
     return {"message": "住宿分配成功"}
 
 
 @router.delete("/{conference_id}/assign/{assignment_id}")
-async def remove_hotel_assignment(
-    conference_id: int,
-    assignment_id: int,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def remove_hotel_assignment(req, conference_id: str, assignment_id: str):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
     user_id = current_user["id"]
 
     await db.execute_run(
         "DELETE FROM hotel_assignments WHERE id = ? AND user_id = ? AND conference_id = ?",
-        [assignment_id, user_id, conference_id]
+        [int(assignment_id), user_id, int(conference_id)]
     )
     return {"message": "住宿分配已移除"}
 
 
 @router.delete("/{conference_id}/clear")
-async def clear_hotel_assignments(
-    conference_id: int,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def clear_hotel_assignments(req, conference_id: str):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
     user_id = current_user["id"]
 
     await db.execute_run(
         "DELETE FROM hotel_assignments WHERE user_id = ? AND conference_id = ?",
-        [user_id, conference_id]
+        [user_id, int(conference_id)]
     )
     return {"message": "住宿安排已清空"}

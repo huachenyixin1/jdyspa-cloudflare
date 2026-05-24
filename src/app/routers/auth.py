@@ -3,21 +3,19 @@
 所有数据库操作改为 D1 原生 SQL
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from app.asgi_app import Router, HTTPException
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 import secrets
 import string
 
-from app.core.database import get_db, D1Database
+from app.core.database import get_db_from_env
 from app.core.security import (
     verify_password, get_password_hash, create_access_token,
     get_current_active_user, ACCESS_TOKEN_EXPIRE_HOURS
 )
-from app.schemas.user import UserResponse, Token
 
-router = APIRouter(prefix="/auth", tags=["认证"])
+router = Router(prefix="/auth")
 
 
 @dataclass
@@ -50,8 +48,10 @@ class UseInvitationCode:
     code: str = ""
 
 
-@router.post("/register", response_model=UserResponse)
-async def register(user: RegisterWithCode, db: D1Database = Depends(get_db)):
+@router.post("/register")
+async def register(req):
+    db = get_db_from_env(req.env)
+    user = req.json(RegisterWithCode)
 
     # 检查用户名
     existing = await db.execute_one(
@@ -111,23 +111,27 @@ async def register(user: RegisterWithCode, db: D1Database = Depends(get_db)):
     }
 
 
-@router.post("/login", response_model=Token)
-async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: D1Database = Depends(get_db)):
+@router.post("/login")
+async def login(req):
+    db = get_db_from_env(req.env)
+    body = req.json_body
+    username = body.get("username", "")
+    password = body.get("password", "")
 
     row = await db.execute_one(
-        "SELECT * FROM users WHERE username = ?", [form_data.username]
+        "SELECT * FROM users WHERE username = ?", [username]
     )
     if not row:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=401,
             detail="用户名或密码错误",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
     user = dict(row)
-    if not verify_password(form_data.password, user["hashed_password"]):
+    if not verify_password(password, user["hashed_password"]):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=401,
             detail="用户名或密码错误",
             headers={"WWW-Authenticate": "Bearer"},
         )
@@ -151,7 +155,8 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: D1Database
 
 
 @router.get("/me")
-async def get_me(current_user: dict = Depends(get_current_active_user)):
+async def get_me(req):
+    current_user = await get_current_active_user(req)
     return {
         "id": current_user["id"],
         "username": current_user["username"],
@@ -167,11 +172,10 @@ async def get_me(current_user: dict = Depends(get_current_active_user)):
 
 
 @router.post("/change-password")
-async def change_password(
-    request: ChangePasswordRequest,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def change_password(req):
+    current_user = await get_current_active_user(req)
+    db = get_db_from_env(req.env)
+    request = req.json(ChangePasswordRequest)
 
     if not verify_password(request.old_password, current_user["hashed_password"]):
         raise HTTPException(status_code=400, detail="当前密码错误")
@@ -189,7 +193,9 @@ async def change_password(
 
 
 @router.post("/forgot-password")
-async def forgot_password(request: ForgotPasswordRequest, db: D1Database = Depends(get_db)):
+async def forgot_password(req):
+    db = get_db_from_env(req.env)
+    request = req.json(ForgotPasswordRequest)
 
     user = await db.execute_one(
         "SELECT id, username FROM users WHERE email = ?", [request.email]
@@ -209,7 +215,9 @@ async def forgot_password(request: ForgotPasswordRequest, db: D1Database = Depen
 
 
 @router.post("/reset-password")
-async def reset_password(request: ResetPasswordRequest, db: D1Database = Depends(get_db)):
+async def reset_password(req):
+    db = get_db_from_env(req.env)
+    request = req.json(ResetPasswordRequest)
 
     user = await db.execute_one(
         "SELECT id, reset_token_expires FROM users WHERE reset_token = ?",
@@ -237,7 +245,9 @@ async def reset_password(request: ResetPasswordRequest, db: D1Database = Depends
 
 
 @router.get("/verify-reset-token")
-async def verify_reset_token(token: str, db: D1Database = Depends(get_db)):
+async def verify_reset_token(req):
+    db = get_db_from_env(req.env)
+    token = req.query_param("token", "")
 
     user = await db.execute_one(
         "SELECT username, reset_token_expires FROM users WHERE reset_token = ?",
@@ -256,11 +266,10 @@ async def verify_reset_token(token: str, db: D1Database = Depends(get_db)):
 
 
 @router.post("/invitation-codes/use")
-async def use_invitation_code(
-    request: UseInvitationCode,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def use_invitation_code(req):
+    current_user = await get_current_active_user(req)
+    db = get_db_from_env(req.env)
+    request = req.json(UseInvitationCode)
 
     invitation = await db.execute_one(
         "SELECT id, duration_days FROM invitation_codes WHERE code = ? AND status = 'unused'",
@@ -298,7 +307,9 @@ async def use_invitation_code(
 
 
 @router.post("/invitation-codes/validate")
-async def validate_invitation_code(code: str, db: D1Database = Depends(get_db)):
+async def validate_invitation_code(req):
+    db = get_db_from_env(req.env)
+    code = req.query_param("code", "")
 
     invitation = await db.execute_one(
         "SELECT duration_days FROM invitation_codes WHERE code = ? AND status = 'unused'",

@@ -2,15 +2,15 @@
 管理员路由 - D1 版本
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from app.asgi_app import Router, HTTPException
 from datetime import datetime
 import secrets
 import string
 
-from app.core.database import get_db, D1Database
+from app.core.database import get_db_from_env
 from app.core.security import get_current_active_user, get_password_hash
 
-router = APIRouter(prefix="/admin", tags=["admin"])
+router = Router(prefix="/admin")
 
 
 def is_admin(user: dict) -> bool:
@@ -18,10 +18,9 @@ def is_admin(user: dict) -> bool:
 
 
 @router.get("/users")
-async def list_users(
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def list_users(req):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
     if not is_admin(current_user):
         raise HTTPException(status_code=403, detail="需要管理员权限")
 
@@ -33,32 +32,30 @@ async def list_users(
 
 
 @router.put("/users/{user_id}/toggle-active")
-async def toggle_user_active(
-    user_id: int,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def toggle_user_active(req, user_id: str):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
     if not is_admin(current_user):
         raise HTTPException(status_code=403, detail="需要管理员权限")
 
-    user = await db.execute_one("SELECT is_active FROM users WHERE id = ?", [user_id])
+    user = await db.execute_one("SELECT is_active FROM users WHERE id = ?", [int(user_id)])
     if not user:
         raise HTTPException(status_code=404, detail="用户不存在")
 
     new_status = 0 if dict(user)["is_active"] else 1
-    await db.execute_run("UPDATE users SET is_active = ? WHERE id = ?", [new_status, user_id])
+    await db.execute_run("UPDATE users SET is_active = ? WHERE id = ?", [new_status, int(user_id)])
     return {"message": "用户状态已更新", "is_active": bool(new_status)}
 
 
 @router.post("/invitation-codes")
-async def create_invitation_code(
-    duration_days: int = 30,
-    count: int = 1,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def create_invitation_code(req):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
     if not is_admin(current_user):
         raise HTTPException(status_code=403, detail="需要管理员权限")
+
+    duration_days = int(req.query_param("duration_days", "30"))
+    count = int(req.query_param("count", "1"))
 
     codes = []
     for _ in range(count):
@@ -73,10 +70,9 @@ async def create_invitation_code(
 
 
 @router.get("/invitation-codes")
-async def list_invitation_codes(
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def list_invitation_codes(req):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
     if not is_admin(current_user):
         raise HTTPException(status_code=403, detail="需要管理员权限")
 
@@ -88,10 +84,9 @@ async def list_invitation_codes(
 
 
 @router.get("/stats")
-async def get_admin_stats(
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def get_admin_stats(req):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
     if not is_admin(current_user):
         raise HTTPException(status_code=403, detail="需要管理员权限")
 
@@ -107,14 +102,13 @@ async def get_admin_stats(
 
 
 @router.get("/system-logs")
-async def get_system_logs(
-    limit: int = 100,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def get_system_logs(req):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
     if not is_admin(current_user):
         raise HTTPException(status_code=403, detail="需要管理员权限")
 
+    limit = int(req.query_param("limit", "100"))
     result = await db.execute(
         "SELECT * FROM system_logs ORDER BY created_at DESC LIMIT ?",
         [limit]

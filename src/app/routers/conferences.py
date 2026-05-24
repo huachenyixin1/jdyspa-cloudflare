@@ -3,14 +3,14 @@
 所有查询添加 user_id 条件实现数据隔离
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from app.asgi_app import Router, HTTPException
 from datetime import datetime
 
-from app.core.database import get_db, D1Database
+from app.core.database import get_db_from_env
 from app.core.security import get_current_active_user
 from app.schemas.conference import ConferenceCreate, ConferenceUpdate
 
-router = APIRouter(prefix="/conferences", tags=["conferences"])
+router = Router(prefix="/conferences")
 
 
 def conference_to_dict(c: dict) -> dict:
@@ -60,25 +60,24 @@ def parse_date(date_str: str):
 
 
 @router.post("/")
-async def create_conference(
-    conference: ConferenceCreate,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def create_conference(req):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
+    data = req.json(ConferenceCreate)
     user_id = current_user["id"]
 
     code = await generate_conference_code(user_id, db)
-    start_date = parse_date(conference.start_date)
-    end_date = parse_date(conference.end_date)
+    start_date = parse_date(data.start_date)
+    end_date = parse_date(data.end_date)
     year = start_date.year if start_date else datetime.now().year
 
     result = await db.execute_run(
         """INSERT INTO conferences (user_id, code, title, purpose, scale, schedule, location,
            has_meal, has_hotel, has_transport, start_date, end_date, year)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        [user_id, code, conference.title, conference.purpose, conference.scale,
-         conference.schedule, conference.location,
-         int(conference.has_meal), int(conference.has_hotel), int(conference.has_transport),
+        [user_id, code, data.title, data.purpose, data.scale,
+         data.schedule, data.location,
+         int(data.has_meal), int(data.has_hotel), int(data.has_transport),
          str(start_date) if start_date else None, str(end_date) if end_date else None, year]
     )
 
@@ -88,10 +87,9 @@ async def create_conference(
 
 
 @router.get("/")
-async def get_conferences(
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def get_conferences(req):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
     user_id = current_user["id"]
 
     result = await db.execute(
@@ -103,10 +101,9 @@ async def get_conferences(
 
 
 @router.get("/stats/summary")
-async def get_stats_summary(
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def get_stats_summary(req):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
     user_id = current_user["id"]
 
     conf_count = await db.execute_one(
@@ -127,16 +124,14 @@ async def get_stats_summary(
 
 
 @router.get("/{conference_id}")
-async def get_conference(
-    conference_id: int,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def get_conference(req, conference_id: str):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
     user_id = current_user["id"]
 
     row = await db.execute_one(
         "SELECT * FROM conferences WHERE id = ? AND user_id = ?",
-        [conference_id, user_id]
+        [int(conference_id), user_id]
     )
     if not row:
         raise HTTPException(status_code=404, detail="会议不存在")
@@ -144,22 +139,20 @@ async def get_conference(
 
 
 @router.put("/{conference_id}")
-async def update_conference(
-    conference_id: int,
-    conference: ConferenceUpdate,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def update_conference(req, conference_id: str):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
+    data = req.json(ConferenceUpdate)
     user_id = current_user["id"]
 
     existing = await db.execute_one(
         "SELECT * FROM conferences WHERE id = ? AND user_id = ?",
-        [conference_id, user_id]
+        [int(conference_id), user_id]
     )
     if not existing:
         raise HTTPException(status_code=404, detail="会议不存在")
 
-    update_data = {k: v for k, v in vars(conference).items() if v is not None}
+    update_data = {k: v for k, v in vars(data).items() if v is not None}
     if "date" in update_data:
         del update_data["date"]
 
@@ -180,32 +173,29 @@ async def update_conference(
         params.append(value)
 
     if set_clauses:
-        params.append(conference_id)
+        params.append(int(conference_id))
         params.append(user_id)
         await db.execute_run(
             f"UPDATE conferences SET {', '.join(set_clauses)}, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?",
             params
         )
 
-    row = await db.execute_one("SELECT * FROM conferences WHERE id = ?", [conference_id])
+    row = await db.execute_one("SELECT * FROM conferences WHERE id = ?", [int(conference_id)])
     return conference_to_dict(dict(row))
 
 
 @router.delete("/{conference_id}")
-async def delete_conference(
-    conference_id: int,
-    current_user: dict = Depends(get_current_active_user),
-    db: D1Database = Depends(get_db),
-):
+async def delete_conference(req, conference_id: str):
+    db = get_db_from_env(req.env)
+    current_user = await get_current_active_user(req)
     user_id = current_user["id"]
 
     existing = await db.execute_one(
         "SELECT id FROM conferences WHERE id = ? AND user_id = ?",
-        [conference_id, user_id]
+        [int(conference_id), user_id]
     )
     if not existing:
         raise HTTPException(status_code=404, detail="会议不存在")
 
-    # D1 支持 ON DELETE CASCADE，但需要确保外键启用
-    await db.execute_run("DELETE FROM conferences WHERE id = ? AND user_id = ?", [conference_id, user_id])
+    await db.execute_run("DELETE FROM conferences WHERE id = ? AND user_id = ?", [int(conference_id), user_id])
     return {"message": "会议删除成功"}
