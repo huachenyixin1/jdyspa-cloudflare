@@ -1,6 +1,6 @@
 from app.asgi_app import Router
 
-router = Router(prefix="/api")
+router = Router()
 
 
 @router.get("/stats")

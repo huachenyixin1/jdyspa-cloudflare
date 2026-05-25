@@ -15,7 +15,7 @@ from app.core.security import (
     get_current_active_user, ACCESS_TOKEN_EXPIRE_HOURS
 )
 
-router = Router(prefix="/api/auth")
+router = Router(prefix="/auth")
 
 
 @dataclass
@@ -114,24 +114,9 @@ async def register(req):
 @router.post("/login")
 async def login(req):
     db = get_db_from_env(req.env)
-
-    # 同时支持 JSON 和 FormData
-    content_type = req.headers.get("content-type", "")
-    if "json" in content_type:
-        body = req.json_body
-        username = body.get("username", "")
-        password = body.get("password", "")
-    else:
-        # 解析 form data
-        raw = req.body_bytes.decode("utf-8")
-        params = {}
-        for part in raw.split("&"):
-            if "=" in part:
-                k, v = part.split("=", 1)
-                from urllib.parse import unquote
-                params[unquote(k)] = unquote(v)
-        username = params.get("username", "")
-        password = params.get("password", "")
+    body = req.json_body
+    username = body.get("username", "")
+    password = body.get("password", "")
 
     row = await db.execute_one(
         "SELECT * FROM users WHERE username = ?", [username]
