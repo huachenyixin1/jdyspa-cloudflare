@@ -254,15 +254,13 @@ class App:
             return
 
         try:
-            # 读取请求体
+            # 读取请求体 - Workers 中 body 一次性到达，不能无限循环
             body_bytes = b""
-            more_body = True
-            while more_body:
-                event = await receive()
-                body_bytes += event.get("body", b"")
-                more_body = event.get("more_body", False)
+            event = await receive()
+            if event["type"] == "http.request":
+                body_bytes = event.get("body", b"")
 
-            # 创建 Request 对象（不含 db 和 user，稍后注入）
+            # 创建 Request 对象
             req = Request(scope, body_bytes, scope.get("env"))
 
             # 匹配路由
