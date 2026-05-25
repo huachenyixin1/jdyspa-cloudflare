@@ -1,39 +1,57 @@
 """
-Cloudflare Worker 入口 - 逐步诊断
+Cloudflare Worker 入口 - 直接路由
 """
 
 from workers import WorkerEntrypoint, Response
 import json
+from app.asgi_app import App, Router, HTTPException
+from app.routers import all_routers
 
 
 class Default(WorkerEntrypoint):
     async def fetch(self, request):
-        steps = []
+        # 解析 URL
+        url_str = str(request.url)
+        q_idx = url_str.find("?")
+        full_path = url_str[:q_idx] if q_idx >= 0 else url_str
+        # 提取路径（去掉域名）
+        path = "/" + "/".join(full_path.split("/")[3:])
+        query = url_str[q_idx+1:] if q_idx >= 0 else ""
 
-        try:
-            steps.append("s1:import_asgi_app")
-            from app.asgi_app import App, Router, HTTPException
-            steps.append("s2:import_routers")
-            from app.routers import all_routers
-            steps.append("s3:import_security")
-            from app.core.security import verify_password, get_password_hash
-            steps.append("s4:create_hash")
-            h = get_password_hash("test123")
-            steps.append(f"s5:verify={verify_password('test123',h)}")
-            steps.append("s6:create_jwt")
-            from app.core.security import create_access_token, decode_token
-            t = create_access_token({"sub": "1"})
-            d = decode_token(t)
-            steps.append(f"s7:jwt_ok=sub={d.get('sub')}")
+        # 获取请求体
+        body = await request.body()
 
-            return Response(
-                body=json.dumps({"status": "ok", "steps": steps}),
-                status=200,
-                headers={"content-type": "application/json"},
-            )
-        except Exception as e:
-            return Response(
-                body=json.dumps({"status": "error", "steps": steps, "error": str(e)}),
-                status=500,
-                headers={"content-type": "application/json"},
-            )
+        # 构建 ASGI scope
+        scope = {
+            "type": "http",
+            "method": request.method,
+            "path": path,
+            "query_string": query.encode(),
+            "headers": [(k.lower().encode(), v.encode()) for k, v in request.headers.items()],
+            "env": self.env,
+        }
+
+        result = {"status": 500, "body": b"", "headers": []}
+
+        async def receive():
+            return {"type": "http.request", "body": body, "more_body": False}
+
+        async def send(msg):
+            if msg["type"] == "http.response.start":
+                result["status"] = msg["status"]
+                result["headers"] = msg["headers"]
+            elif msg["type"] == "http.response.body":
+                result["body"] = msg.get("body", b"")
+
+        # 构建应用
+        app = App()
+        for r in all_routers:
+            app.include_router(r)
+
+        await app(scope, receive, send)
+
+        headers = {}
+        for k, v in result["headers"]:
+            headers[k.decode()] = v.decode()
+
+        return Response(body=result["body"], status=result["status"], headers=headers)
