@@ -1,2 +1,0 @@
-[console_scripts]
-pyodide = pyodide_cli.__main__:main

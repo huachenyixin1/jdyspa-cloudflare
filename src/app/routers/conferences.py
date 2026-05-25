@@ -6,7 +6,7 @@
 from app.asgi_app import Router, HTTPException
 from datetime import datetime
 
-from app.core.database import get_db_from_env
+from app.core.database import get_db_from_env, D1Database
 from app.core.security import get_current_active_user
 from app.schemas.conference import ConferenceCreate, ConferenceUpdate
 

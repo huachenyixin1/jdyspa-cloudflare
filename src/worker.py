@@ -1,14 +1,12 @@
 """
-Cloudflare Worker 入口 - 简单版本
+Cloudflare Worker 入口
 """
 
-from workers import WorkerEntrypoint, Response
+from workers import WorkerEntrypoint
+import asgi
 
 
 class Default(WorkerEntrypoint):
     async def fetch(self, request):
-        return Response(
-            body='{"message":"OK"}',
-            status=200,
-            headers={"content-type": "application/json"},
-        )
+        from app.main import app
+        return await asgi.fetch(app, request, self.env)
