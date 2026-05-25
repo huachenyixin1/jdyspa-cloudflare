@@ -12,7 +12,7 @@ from app.schemas.restaurant import (
     SeatAssignCreate, SeatAssignDelete, SwapAssignRequest, MoveAssignRequest
 )
 
-router = Router(prefix="/restaurants")
+router = Router(prefix="/api/restaurants")
 
 
 # ===== 餐厅 CRUD =====

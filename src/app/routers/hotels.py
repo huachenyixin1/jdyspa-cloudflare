@@ -8,7 +8,7 @@ from app.core.database import get_db_from_env
 from app.core.security import get_current_active_user
 from app.schemas.hotel import HotelCreate, HotelUpdate, RoomCreate, RoomBatchCreate, RoomUpdate, AssignmentCreate
 
-router = Router(prefix="/hotels")
+router = Router(prefix="/api/hotels")
 
 
 # ===== 酒店 CRUD =====

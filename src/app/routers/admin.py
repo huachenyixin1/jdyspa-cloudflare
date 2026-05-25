@@ -10,7 +10,7 @@ import string
 from app.core.database import get_db_from_env
 from app.core.security import get_current_active_user, get_password_hash
 
-router = Router(prefix="/admin")
+router = Router(prefix="/api/admin")
 
 
 def is_admin(user: dict) -> bool:

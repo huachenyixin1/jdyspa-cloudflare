@@ -10,7 +10,7 @@ from app.core.database import get_db_from_env, D1Database
 from app.core.security import get_current_active_user
 from app.schemas.conference import ConferenceCreate, ConferenceUpdate
 
-router = Router(prefix="/conferences")
+router = Router(prefix="/api/conferences")
 
 
 def conference_to_dict(c: dict) -> dict:

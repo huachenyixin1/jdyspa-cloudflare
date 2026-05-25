@@ -12,7 +12,7 @@ from app.schemas.seating import (
     SeatAssign, SwapRequest, AutoAssignRequest, PriorityConfig
 )
 
-router = Router(prefix="/seating")
+router = Router(prefix="/api/seating")
 
 
 @router.get("/{conference_id}/areas")

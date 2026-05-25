@@ -14,7 +14,7 @@ from app.core.database import get_db_from_env
 from app.core.security import get_current_active_user
 from app.schemas.participant import ParticipantCreate, ParticipantUpdate, BatchDeleteRequest
 
-router = Router(prefix="/participants")
+router = Router(prefix="/api/participants")
 
 
 def participant_to_dict(p: dict, decrypt: bool = False) -> dict:
